@@ -46,7 +46,7 @@ def action_probs_top_n_epsilon(q_table, n, epsilon):
   - action_probs: Calculated action probabilities
   """
   # Define your epsilon value
-  epsilon = 0.01  # Adjust the value of epsilon as needed
+    # epsilon = 0.01  # Adjust the value of epsilon as needed
 
   num_actions = q_table.shape[-1]
 
