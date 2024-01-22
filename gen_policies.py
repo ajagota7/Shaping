@@ -1,4 +1,11 @@
+import choose_actions
+from choose_actions import choose_action
 
+import shaping_features
+from shaping_features import smallest_distance_to_deadend
+
+import pickle
+import numpy as np
 
 def experiment_actions(nb_episodes, env, action_probs):
     """
@@ -10,9 +17,9 @@ def experiment_actions(nb_episodes, env, action_probs):
     - action_probs: Action probabilities
 
     Returns:
-    - evaluation_policies: List of evaluation policies
+    - policies: List of policies (pi_b or pi_e)
     """
-    evaluation_policies = []
+    policies = []
     for i in range(nb_episodes):
         trajectory = []
         s = env.reset()
@@ -29,7 +36,7 @@ def experiment_actions(nb_episodes, env, action_probs):
             trajectory.append(np.array([state_last, action, r, s, timestep, psi]))
             timestep +=1
 
-        evaluation_policies.append(trajectory)
-    with open('evaluation_policies.pkl', 'wb') as f:
-        pickle.dump(evaluation_policies, f)
-    return evaluation_policies
+        policies.append(trajectory)
+    with open('policies.pkl', 'wb') as f:
+        pickle.dump(policies, f)
+    return policies
