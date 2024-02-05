@@ -140,15 +140,17 @@ class SCOPE_variance(object):
 
         return gamma_weights_states_last_sub_states_first        
         
-    def bootstrap_shaping_terms(self, sums_states_weight_diff, gamma_weights_states_last_sub_states_first, num_samples):
+    def bootstrap_shaping_terms(self, sums_states_weight_diff, gamma_weights_states_last_sub_states_first):
 
         seed = 42
         torch.manual_seed(seed)
 
-        num_bootstraps = num_samples*sums_states_weight_diff.shape[0]
+        num_samples = self.num_bootstraps
+
+        num_bootstraps_lin = num_samples*sums_states_weight_diff.shape[0]
 
         # Sample indices with replacement
-        sampled_indices = torch.randint(0, len(sums_states_weight_diff), size=(num_bootstraps,), dtype=torch.long)
+        sampled_indices = torch.randint(0, len(sums_states_weight_diff), size=(num_bootstraps_lin,), dtype=torch.long)
 
         reshaped_size = (num_samples, sums_states_weight_diff.shape[0])
         
