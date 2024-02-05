@@ -134,7 +134,12 @@ class SCOPE_variance(object):
         sums_states_weight_diff = torch.sum(states_weight_diff, dim =1)
 
         return sums_states_weight_diff
-    
+
+    def last_first_terms_operations(self, gamma_weights_last_tensor, states_last_output, states_first_output):
+        gamma_weights_states_last_sub_states_first = gamma_weights_last_tensor*states_last_output -  states_first_output
+
+        return gamma_weights_states_last_sub_states_first        
+        
     def bootstrap_shaping_terms(self, sums_states_weight_diff, gamma_weights_states_last_sub_states_first, num_samples):
 
         seed = 42
