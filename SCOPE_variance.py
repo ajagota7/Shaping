@@ -4,13 +4,14 @@ from IS import calculate_importance_weights
 import torch 
 
 class SCOPE_variance(object):
-    def __init__(self, model, gamma, num_bootstraps, pi_b, P_pi_b, P_pi_e):
+    def __init__(self, model, gamma, num_bootstraps, pi_b, P_pi_b, P_pi_e, dtype):
         self.model = model
         self.gamma = gamma
         self.num_bootstraps = num_bootstraps
         self.pi_b = pi_b
         self.P_pi_b = P_pi_b
         self.P_pi_e = P_pi_e
+        self.dtype = dtype
 
             
     def prep_policies(self):
@@ -84,31 +85,31 @@ class SCOPE_variance(object):
         return padded_states, padded_weights_difference 
 
     def tensorize_padded_terms(self, padded_states, padded_weights_difference):
-        padded_state_tensors = torch.tensor(padded_states, dtype = torch.float32)
-        padded_weight_diff_tensors = torch.tensor(padded_weights_difference, dtype = torch.float32)
+        padded_state_tensors = torch.tensor(padded_states, dtype = self.dtype)
+        padded_weight_diff_tensors = torch.tensor(padded_weights_difference, dtype = self.dtype)
         padded_weight_diff_tensors = padded_weight_diff_tensors.unsqueeze(-1)
 
         return padded_state_tensors, padded_weight_diff_tensors
     
     def tensorize_last_and_first_terms(self, states_first, states_last, gamma_last, weights_last):
-        states_first_tensor = torch.tensor(states_first, dtype = torch.float32)
-        states_last_tensor = torch.tensor(states_last, dtype = torch.float32)
-        gamma_last_tensor = torch.tensor(gamma_last, dtype = torch.float32)
-        weights_last_tensor = torch.tensor(weights_last, dtype = torch.float32)
+        states_first_tensor = torch.tensor(states_first, dtype = self.dtype)
+        states_last_tensor = torch.tensor(states_last, dtype = self.dtype)
+        gamma_last_tensor = torch.tensor(gamma_last, dtype = self.dtype)
+        weights_last_tensor = torch.tensor(weights_last, dtype = self.dtype)
 
         return states_first_tensor, states_last_tensor, gamma_last_tensor, weights_last_tensor
     
     def calc_IS_terms(self, gamma, timesteps, rewards, weights):
         gtrw = np.power(gamma, timesteps)*rewards*weights
 
-        IS_tensor = torch.sum(torch.tensor(gtrw, dtype = torch.float32), dim = 1, keepdim = True)
+        IS_tensor = torch.sum(torch.tensor(gtrw, dtype = self.dtype), dim = 1, keepdim = True)
 
         return IS_tensor
     
     def calc_gamma_weight_last(self, gamma, gamma_last, weights_last):
         gamma_weight_last = np.power(gamma, gamma_last)*weights_last
 
-        gamma_weight_last_tensor = torch.tensor(gamma_weight_last, dtype = torch.float32).unsqueeze(-1)
+        gamma_weight_last_tensor = torch.tensor(gamma_weight_last, dtype = self.dtype).unsqueeze(-1)
 
         return gamma_weight_last_tensor
     def bootstrap_IS_terms(self, IS_tensor, num_samples):
