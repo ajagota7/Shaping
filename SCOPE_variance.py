@@ -141,7 +141,7 @@ class SCOPE_variance(object):
 
         return gamma_weights_states_last_sub_states_first        
         
-    def bootstrap_shaping_terms(self, sums_states_weight_diff, gamma_weights_states_last_sub_states_first):
+    def bootstrap_shaping_terms(self, sums_states_weight_diff, gamma_weights_states_last_sub_states_first, IS_tensor):
 
         seed = 42
         torch.manual_seed(seed)
@@ -162,9 +162,16 @@ class SCOPE_variance(object):
         # Sum states_weight_diff and gamma_weights-states_last_sub_states_first
         sum_terms = sums_states_weight_diff + gamma_weights_states_last_sub_states_first
 
+        # sample IS terms
+        
+        IS_SCOPE = IS_tensor * sum_terms
+
+        samples_IS_SCOPE = IS_SCOPE[sampled_indices].view(reshaped_size)
+
+
         sample_all_shaping = sum_terms[sampled_indices].view(reshaped_size)
 
-        return sample_sums_states_weight_diff, samples_gamma_weight_states_last_sub_states_first, sample_all_shaping
+        return sample_sums_states_weight_diff, samples_gamma_weight_states_last_sub_states_first, sample_all_shaping, samples_IS_SCOPE
     
     def pass_states(self,model, padded_state_tensors, states_first_tensor, states_last_tensor):
         # Get model outputs for states 
