@@ -191,7 +191,7 @@ class SCOPE_variance(object):
         gamma_weights_last_tensor = self.calc_gamma_weight_last(self.gamma, gamma_last, weights_last)
         samples_IS = self.bootstrap_IS_terms(IS_tensor, self.num_bootstraps)
 
-        return samples_IS, padded_state_tensors, padded_weight_diff_tensors, gamma_weights_last_tensor, states_first_tensor, states_last_tensor
+        return IS_tensor, samples_IS, padded_state_tensors, padded_weight_diff_tensors, gamma_weights_last_tensor, states_first_tensor, states_last_tensor
 
 
     
