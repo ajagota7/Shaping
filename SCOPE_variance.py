@@ -159,8 +159,12 @@ class SCOPE_variance(object):
         sample_sums_states_weight_diff = sums_states_weight_diff[sampled_indices].view(reshaped_size)
         samples_gamma_weight_states_last_sub_states_first = gamma_weights_states_last_sub_states_first[sampled_indices].view(reshaped_size)
 
+        # Sum states_weight_diff and gamma_weights-states_last_sub_states_first
+        sum_terms = sums_states_weight_diff + gamma_weights_states_last_sub_states_first
 
-        return sample_sums_states_weight_diff, samples_gamma_weight_states_last_sub_states_first
+        sample_all_shaping = sum_terms[sampled_indices].view(reshaped_size)
+
+        return sample_sums_states_weight_diff, samples_gamma_weight_states_last_sub_states_first, sample_all_shaping
     
     def pass_states(self,model, padded_state_tensors, states_first_tensor, states_last_tensor):
         # Get model outputs for states 
