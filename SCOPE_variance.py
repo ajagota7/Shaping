@@ -29,7 +29,7 @@ class SCOPE_variance(object):
 
         for index, policy in enumerate(self.pi_b):
             policy_array = np.array(policy)
-            timesteps.append(policy_array[:, 4].astype(int))
+            timesteps.append(policy_array['timestep'].astype(int))
             # s.append(policy_array[:, 0])
 
             # last timestep for gamma
@@ -38,12 +38,12 @@ class SCOPE_variance(object):
             weight_last.append(weights[index][-1])
 
 
-            states.append(policy_array[:, 0][1:])
-            psi.append(policy_array[:,5][1:])
-            state_first.append(policy_array[:,0][0])
-            state_last.append(policy_array[:,0][-1])
-            actions.append(policy_array[:, 1])
-            rewards.append(policy_array[:, 2].astype(float))
+            states.append(policy_array['state'][1:])
+            psi.append(policy_array['psi'][1:])
+            state_first.append(policy_array['state'][0])
+            state_last.append(policy_array['state'][-1])
+            actions.append(policy_array['action'])
+            rewards.append(policy_array['reward'].astype(float))
         
         weights_difference = []
         for index, weight in enumerate(weights):
