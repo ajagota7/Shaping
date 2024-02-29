@@ -56,10 +56,10 @@ def experiment_actions(nb_episodes, env, action_probs):
     """
     # Define the dtype for the structured array
     dtype = [
-        ('state_last', np.float64, (2,)),
+        ('state', np.float64, (2,)),
         ('action', np.int64),
         ('reward', np.float64),
-        ('state', np.float64, (2,)),
+        ('state_next', np.float64, (2,)),
         ('timestep', np.int64),
         ('psi', np.float64)
     ]
