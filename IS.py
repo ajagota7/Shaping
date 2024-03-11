@@ -29,7 +29,7 @@ def calculate_importance_weights(eval_policy, behav_policy, behavior_policies):
             cumul_weights.append(cum_ratio)
         all_weights_temp.append(cumul_weights)
 
-        all_weights = [list(np.cumprod(i)) for i in all_weights_temp]
+        # all_weights = [list(np.cumprod(i)) for i in all_weights_temp]
 
-    return all_weights
+    return all_weights_temp
 
