@@ -3,7 +3,7 @@ from IS import calculate_importance_weights
 
 import torch 
 
-class SCOPE_variance_play(object):
+class SCOPE_variance(object):
     def __init__(self, model, gamma, num_bootstraps, pi_b, P_pi_b, P_pi_e, dtype):
         self.model = model
         self.gamma = gamma
