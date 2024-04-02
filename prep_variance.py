@@ -1,7 +1,7 @@
 import numpy as np 
 from IS import calculate_importance_weights
 import torch
-
+print("hello world")
 def variance_terms_tens(eval_policy, behav_policy, behavior_policies):
   # Initialize lists to store axis data for each policy
   t = []
