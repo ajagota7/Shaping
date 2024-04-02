@@ -106,9 +106,6 @@ def variance_terms_tens(eval_policy, behav_policy, behavior_policies):
   # return IS_all, samples_s, samples_w_diff, F_all
 
 
-
-
-
 def calc_variance_t(IS, state_tensors, w_diff, f, sample_last_tensors, feature_net, behavior_policies):
 
   output_arrays = np.empty((len(state_tensors),), dtype=object)
