@@ -3,6 +3,9 @@ from choose_actions import choose_action
 
 import shaping_features
 from shaping_features import smallest_distance_to_deadend
+from shaping_features import smallest_distance_to_death
+from shaping_features import smallest_distance_to_recovery
+
 
 import pickle
 import numpy as np
