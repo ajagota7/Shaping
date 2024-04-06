@@ -32,7 +32,9 @@ def experiment_actions(nb_episodes, env, action_probs):
         ('timestep', np.int64),
         # ('dead_end_dist', np.float64),
         # ('recovery_dist', np.float64),
-        ('psi', np.float64, (2,))
+        # ('psi', np.float64, (2,))
+        ('psi', np.float64)
+
     ]
 
     policies = []
@@ -47,9 +49,12 @@ def experiment_actions(nb_episodes, env, action_probs):
             action = choose_action(tuple(s), action_probs)
             s, r, term, _ = env.step(action)
             
-            dead_end_dist = smallest_distance_to_deadend(state_last, env)
-            recovery_dist = smallest_distance_to_recovery(state_last, env)
-            psi = [dead_end_dist, recovery_dist]            
+            # dead_end_dist = smallest_distance_to_deadend(state_last, env)
+            # recovery_dist = smallest_distance_to_recovery(state_last, env)
+            # psi = [dead_end_dist, recovery_dist]            
+
+            psi = smallest_distance_to_deadend(state_last, env)
+
             data_point = np.array([(state_last, action, r, s, timestep, psi)], dtype=dtype)
             trajectory = np.append(trajectory, data_point)
             timestep += 1
