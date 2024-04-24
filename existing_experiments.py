@@ -125,7 +125,8 @@ class existing_experiments(object):
 
     def load_model(self, epoch = None):
       filename = self.experiment_instance.generate_file_name()
-      loaded_data = torch.load(f"{filename}.pt")
+      file_path = os.path.join(self.folder_path, f"{filename}.pt")
+      loaded_data = torch.load(file_path)
       # loaded_data = torch.load(f"{self.folder_name}/{self.filename}.pt")
       experiment_parameters = loaded_data["Experiment Parameters"]
       _, model_weights = self.load_experiment_metrics()
