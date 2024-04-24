@@ -8,11 +8,20 @@ from neural_net import NN_l1_l2_reg
 
 class existing_experiments(object):
 
-    def __init__(self, experiment_instance, folder_path):
-      # self.folder_name = folder_name
-      # self.filename = filename
+    def __init__(self, experiment_instance):
+
       self.experiment_instance = experiment_instance
-      self.folder_path = folder_path
+      self.folder_path = experiment_instance.folder_path
+
+      if not self.experiment_exists():
+          print("Experiment does not exist in the specified folder.")       
+    
+    def experiment_exists(self):
+      # Check if experiment directory exists
+      filename = self.experiment_instance.generate_file_name()
+      # generate file path with folder and filename
+      file_path = os.path.join(self.folder_path, f"{filename}.pt")
+      return os.path.exists(file_path)
 
     # Individual Experiments
     '''
@@ -310,7 +319,7 @@ class existing_experiments(object):
 
 
 
-    def mse_plots(self):
+    def plot_mse(self):
         Train_mean, Train_variance, Train_mse_loss, total_loss, Test_mean, Test_variance = self.preprocess_epoch_metrics()
         IS_mean, IS_variance = self.load_IS_estimate()
 
@@ -335,7 +344,7 @@ class existing_experiments(object):
         fig.update_layout(title_text="MSE over Epochs", showlegend=True)
         fig.show()
 
-    def plot_metrics_test(self):
+    def plot_metrics(self):
     # def plot_metrics_test(self, IS_mean, Train_mean, Train_variance, Train_mse_loss, total_loss, Test_mean, Test_variance):
       '''
       Plot metrics over epochs
