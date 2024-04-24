@@ -1,4 +1,12 @@
 from typing import List, Union, Callable
+import numpy as np
+import torch
+import os 
+from neural_net import NN_l1_l2_reg
+from SCOPE_straight import SCOPE_straight
+
+from lifegate import LifeGate
+
 
 class SCOPE_experiment():
     def __init__(self,
@@ -102,7 +110,7 @@ class SCOPE_experiment():
     def initialize_env(self):
       # Initalize lifegate class
       env = LifeGate(max_steps=self.max_length, state_mode='tabular',
-                        rendering=True, image_saving=False, render_dir=None, rng=random_state, death_drag = self.death_drag)
+                        rendering=True, image_saving=False, render_dir=None, rng=np.random.RandomState(1234), death_drag = self.death_drag)
 
       return env
 

@@ -3,7 +3,7 @@ from plotly.subplots import make_subplots
 import torch 
 import numpy as np
 import os
-from networkx import NN_l1_l2_reg
+from neural_net import NN_l1_l2_reg
 
 
 class existing_experiments(object):

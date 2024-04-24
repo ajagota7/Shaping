@@ -1,17 +1,25 @@
 import numpy as np 
 from IS import calculate_importance_weights
 
-import torch 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim 
+
+import copy
 
 class SCOPE_straight(object):
 
-  def __init__(self, model, gamma, num_bootstraps, pi_b, P_pi_b, P_pi_e, percent_to_estimate_phi, dtype):
+  def __init__(self, model, gamma, num_bootstraps, pi_b, P_pi_b, pi_e, P_pi_e, percent_to_estimate_phi, shaping_function, env, dtype):
         self.model = model
         self.gamma = gamma
         self.num_bootstraps = num_bootstraps
         self.pi_b = pi_b
         self.P_pi_b = P_pi_b
         self.P_pi_e = P_pi_e
+        self.pi_e = pi_e
+        self.shaping_function = shaping_function
+        self.env = env
         self.dtype = dtype
 
         self.percent_to_estimate_phi = percent_to_estimate_phi
@@ -27,8 +35,8 @@ class SCOPE_straight(object):
     policies_for_phi = self.pi_b[:num_policies_to_estimate_phi]
 
     return policies_for_phi, policies_for_scope
-  
-  
+
+
   # ---------------
   # Pre-processing
   # ---------------
@@ -50,6 +58,10 @@ class SCOPE_straight(object):
 
       states_current = []
       states_next = []
+      states_all = []
+
+      states_last = []
+      psi_last = []
 
       for index, policy in enumerate(chosen_policies):
           policy_array = np.array(policy)
@@ -57,12 +69,29 @@ class SCOPE_straight(object):
           timesteps.append(policy_array['timestep'].astype(int))
           actions.append(policy_array['action'])
           rewards.append(policy_array['reward'].astype(float))
+
+          state_last = policy_array['state_next'][-1]
+          # last_psi = smallest_distance_to_deadend(state_last, env)
+          last_psi = self.shaping_function(state_last, self.env)
+          states_last.append(state_last)
+          psi_last.append(last_psi)
+
+          # Concatenate psi array with last_psi
+          # all_psi = np.concatenate((policy_array['psi'], [last_psi]))
+          # psi.append(all_psi)
           psi.append(policy_array['psi'])
 
           states_next.append(policy_array['state_next'])
           states_current.append(policy_array['state'])
+          # all_states = policy_array['state'] + policy_array['state_next'][-1]
+          all_states = np.vstack((policy_array['state'],policy_array['state_next'][-1]))
+          states_all.append(all_states)
 
-      return timesteps, rewards, states_next, states_current, weights, actions, psi
+          # states_all.append(np.concatenate((policy_array['state'], policy_array['state_next'][-1])))
+
+
+
+      return timesteps, rewards, states_next, states_current, weights, actions, psi, states_last, psi_last
 
   def padding_IS_terms(self, timesteps, actions, rewards, weights):
 
@@ -88,6 +117,24 @@ class SCOPE_straight(object):
     padded_weight_tensors = torch.tensor(padded_weights, dtype = self.dtype)
 
     return padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors
+
+  def padding_states_all(self, states_all, psi):
+    max_length = max(len(trajectory) for trajectory in states_all)
+
+    zero_padding = 0
+
+    # Pad each trajectory to make them all the same length
+    padded_states_all = [
+        [list(item) for item in trajectory] + [[0, 0]] * (max_length - len(trajectory))
+        for trajectory in states_all
+    ]
+
+    padded_psi = [np.concatenate([traj, [zero_padding] * (max_length - len(traj))]) for traj in psi]
+    mask = [[1] * len(trajectory) + [0] * (max_length - len(trajectory)) for trajectory in states_all]
+
+    return padded_states_all, padded_psi, mask
+
+
 
   def padding_states(self, states_next, states_current, psi):
     # Find the maximum length of trajectories
@@ -119,39 +166,52 @@ class SCOPE_straight(object):
     padded_states_next_tensors = torch.tensor(padded_states_next, dtype = self.dtype)
     padded_states_current_tensors = torch.tensor(padded_states_current, dtype = self.dtype)
     padded_psi_tensors = torch.tensor(padded_psi, dtype = self.dtype)
-    # padded_psi_tensors = padded_psi_tensors.unsqueeze(-1)
+
     mask_tensor = torch.tensor(mask, dtype = self.dtype)
     return padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor
 
+  def tensorize_all_states_psi(self, padded_states_all, padded_psi, mask):
+    padded_states_all_tensors = torch.tensor(padded_states_all, dtype = self.dtype)
+    padded_psi_tensors = torch.tensor(padded_psi, dtype = self.dtype)
+    mask_tensor = torch.tensor(mask, dtype = self.dtype)
+
+    return padded_states_all_tensors, padded_psi_tensors, mask_tensor
+
+  def tensorize_last_states_psi(self, states_last, psi_last):
+    states_last_tensor = torch.tensor(states_last, dtype = self.dtype)
+    psi_last_tensor = torch.tensor(psi_last, dtype = self.dtype)
+
+    return states_last_tensor, psi_last_tensor
+
   #-----------------------
   # Preparation Functions
-  # ---------------------- 
+  # ----------------------
 
   def prepare_IS(self):
-    timesteps, rewards, states_next, states_current, weights, actions,_ = self.prep_policies(self.pi_b)
+    timesteps, rewards, states_next, states_current, weights, actions,_,_,_ = self.prep_policies(self.pi_b)
     padded_timesteps, padded_rewards, padded_actions, padded_weights = self.padding_IS_terms(timesteps, actions, rewards, weights)
     padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors = self.tensorize_IS_terms(padded_timesteps, padded_rewards, padded_weights)
 
     return padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors
 
   def prepare_SCOPE(self, policies):
-    timesteps, rewards, states_next, states_current, weights, actions, psi = self.prep_policies(policies)
+    timesteps, rewards, states_next, states_current, weights, actions, psi,states_last, psi_last = self.prep_policies(policies)
     padded_timesteps, padded_rewards, padded_actions, padded_weights = self.padding_IS_terms(timesteps, actions, rewards, weights)
     padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors = self.tensorize_IS_terms(padded_timesteps, padded_rewards, padded_weights)
     padded_states_next, padded_states_current, padded_psi, mask = self.padding_states(states_next, states_current, psi)
     padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor = self.tensorize_padded_terms(padded_states_next, padded_states_current, padded_psi, mask)
-
-    return padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor
+    states_last_tensor, psi_last_tensor = self.tensorize_last_states_psi(states_last, psi_last)
+    return padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor, states_last_tensor, psi_last_tensor
 
   def prepare_SCOPE_phi(self):
     phi_set,_ = self.subset_policies()
-    padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor = self.prepare_SCOPE(phi_set)
+    padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor, states_last_tensor, psi_last_tensor = self.prepare_SCOPE(phi_set)
 
-    return padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor
+    return padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor, states_last_tensor, psi_last_tensor
 
   def prepare_SCOPE_test(self):
     _, scope_set = self.subset_policies()
-    padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors,_,_ = self.prepare_SCOPE(scope_set)
+    padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors,_,_,_,_ = self.prepare_SCOPE(scope_set)
 
     return padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors
 
@@ -159,7 +219,7 @@ class SCOPE_straight(object):
   # ----------------
   # IS Calculations
   # ----------------
- 
+
 
   def bootstrap_IS(self, padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors):
     seed = 42
@@ -198,21 +258,6 @@ class SCOPE_straight(object):
 
     return IS_mean, IS_variance
 
-  # def calc_variance_IS(self, timestep_bootstraps, weights_bootstraps, rewards_bootstraps):
-  #   IS_bootstraps = self.gamma**(timestep_bootstraps)* weights_bootstraps *(rewards_bootstraps)
-
-  #   # Step 1: Sum along the third dimension
-  #   sum_IS_trajectories = torch.sum(IS_bootstraps, dim=2)  # Shape: [1000, 1000]
-
-  #   # Step 2: Take the mean along the second dimension
-  #   mean_IS_sum = torch.mean(sum_IS_trajectories, dim=1)  # Shape: [1000]
-
-  #   # Step 3: Calculate the variance across the first dimension
-  #   IS_variance = torch.var(mean_IS_sum)  # A single scalar value
-
-  #   IS_mean = torch.mean(mean_IS_sum) # A single scalar value
-
-  #   return IS_mean, IS_variance
 
   def IS_pipeline(self):
     padded_timestep_tensors_IS, padded_reward_tensors_IS, padded_weight_tensors_IS = self.prepare_IS()
@@ -250,14 +295,6 @@ class SCOPE_straight(object):
       padded_scope = self.gamma**(padded_timestep_tensors)*padded_weight_tensors*(padded_reward_tensors +self.gamma*states_next_output - states_current_output)
       scope_bootstraps = padded_scope[sampled_indices].view(reshaped_size)
 
-      # timestep_bootstraps = padded_timestep_tensors[sampled_indices].view(reshaped_size)
-      # rewards_bootstraps = padded_reward_tensors[sampled_indices].view(reshaped_size)
-      # weights_bootstraps = padded_weight_tensors[sampled_indices].view(reshaped_size)
-
-      # phi_states_next_bootstraps = states_next_output[sampled_indices].view(reshaped_size)
-      # phi_states_current_bootstraps = states_current_output[sampled_indices].view(reshaped_size)
-      # return timestep_bootstraps, rewards_bootstraps, weights_bootstraps, phi_states_next_bootstraps, phi_states_current_bootstraps
-      
       return scope_bootstraps
 
   def pass_then_boostraps(self, padded_states_next_tensors, padded_states_current_tensors, padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors):
@@ -282,25 +319,7 @@ class SCOPE_straight(object):
 
     return scope_mean, scope_variance
 
-  # def calc_variance_straight(self, timestep_bootstraps, weights_bootstraps, rewards_bootstraps, phi_states_next_bootstraps, phi_states_current_bootstraps):
-
-  #   # IS_boostraps = self.gamma**(timestep_bootstraps)* weights_bootstraps *(rewards_bootstraps)
-  #   scope_bootstraps = self.gamma**(timestep_bootstraps)* weights_bootstraps *(rewards_bootstraps  +self.gamma*phi_states_next_bootstraps - phi_states_current_bootstraps)
-
-  #   # Step 1: Sum along the third dimension
-  #   sum_scope_trajectories = torch.sum(scope_bootstraps, dim=2)  # Shape: [1000, 1000]
-
-  #   # Step 2: Take the mean along the second dimension
-  #   mean_scope_sum = torch.mean(sum_scope_trajectories, dim=1)  # Shape: [1000]
-
-  #   # Step 3: Calculate the variance across the first dimension
-  #   scope_variance = torch.var(mean_scope_sum)  # A single scalar value
-
-  #   scope_mean = torch.mean(mean_scope_sum) # A single scalar value
-
-  #   return scope_mean, scope_variance
-
-  def train_var_scope(self, num_epochs, learning_rate, scope_weight=1, mse_weight=1):
+  def train_var_scope(self, num_epochs, learning_rate, shaping_coefficient, scope_weight=1, mse_weight=1): #, folder_name, filename)
 
       # IS terms for comparison to SCOPE
       padded_timestep_tensors_IS, padded_reward_tensors_IS, padded_weight_tensors_IS = self.prepare_IS()
@@ -311,7 +330,7 @@ class SCOPE_straight(object):
       IS_mean, IS_variance = self.calc_var_IS(IS_bootstraps)
 
       # SCOPE terms for training phi
-      padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor = self.prepare_SCOPE_phi()
+      padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor, states_last_tensor, psi_last_tensor = self.prepare_SCOPE_phi()
 
 
       self.model.train()
@@ -320,6 +339,9 @@ class SCOPE_straight(object):
       torch.autograd.set_detect_anomaly(True)
 
       optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+      # Initialize empty list to store metrics and model state
+      all_metrics = []
+      model_states = []
 
       for epoch in range(num_epochs):
           total_loss = 0
@@ -330,25 +352,34 @@ class SCOPE_straight(object):
           states_next_output, states_current_output = self.pass_states(padded_states_next_tensors, padded_states_current_tensors)
           # timestep_bootstraps, rewards_bootstraps, weights_bootstraps, phi_states_next_bootstraps, phi_states_current_bootstraps = self.bootstrap_straight(padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output)
           # SCOPE_mean, SCOPE_variance = self.calc_variance_straight(timestep_bootstraps, weights_bootstraps, rewards_bootstraps, phi_states_next_bootstraps, phi_states_current_bootstraps)
-          
+
           scope_bootstraps = self.bootstrap_straight(padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output)
           SCOPE_mean, SCOPE_variance = self.calc_var_straight(scope_bootstraps)
-          
+
           # mse_loss = F.mse_loss(states_current_output, 0.2*padded_psi_tensors)
-          mse_loss = F.mse_loss(states_current_output, 0.1*padded_psi_tensors, reduction='none')
+          mse_loss = F.mse_loss(states_current_output, shaping_coefficient*padded_psi_tensors, reduction='none')
           masked_mse_loss = mse_loss * mask_tensor
 
-          mean_mse_loss = masked_mse_loss.mean()
+          states_last_output = self.model(states_last_tensor)
+          mse_states_last_loss = F.mse_loss(states_last_output.squeeze(),shaping_coefficient*psi_last_tensor, reduction = 'none')
+
+          # mean_mse_loss = masked_mse_loss.mean()
+          sum_mse_loss = torch.sum(masked_mse_loss, dim = 1)
+
+          mean_mse_loss = torch.mean(sum_mse_loss + mse_states_last_loss)
 
 
           print(f"Epoch {epoch+1}")
-          print("IS variance: ", IS_variance)
+          print(f"IS mean: {IS_mean},IS variance: {IS_variance}")
           print("SCOPE Var loss: ", SCOPE_variance)
           print("MSE loss: ", mean_mse_loss.item())
 
+
           # Testing evaluaton
+          self.model.eval()
           scope_mean, scope_var = self.evaluate_scope()
           print(f"SCOPE mean: {scope_mean}, SCOPE var: {scope_var}")
+
           self.model.train()
 
 
@@ -367,16 +398,44 @@ class SCOPE_straight(object):
 
           print(f"Total Loss: {total_loss}")
           print("-" * 40)
+          # Append metrics to the list
+          epoch_metrics = {
+              "epoch": epoch + 1,
+              # "IS_mean": IS_mean.item(),
+              # "IS_variance": IS_variance.item(),
+              "Train_mean": SCOPE_mean.item(),
+              "Train_variance": SCOPE_variance.item(),
+              "Train_mse_loss": mean_mse_loss.item(),
+              "total_loss": total_loss,
+              "Test_mean": scope_mean.item(),
+              "Test_variance": scope_var.item()
+          }
+
+          all_metrics.append(epoch_metrics)
+
+          # temporary_model_weights = self.model.state_dict()
+          # model_weight_epoch = temporary_model_weights.copy()
+
+          model_state = self.model.state_dict()
+
+          # print(self.model.state_dict())
+          # print(model_state)
+          # Save model weights every 25 epochs
+          if (epoch + 1) % 25 == 0:
+              # Append model state to the model states list
+              model_states.append({"epoch": epoch + 1, "model_state":  copy.deepcopy(model_state)})
+
+      experiment_metrics = {"per_epoch": all_metrics, "model_weights": model_states}
 
       # Disable anomaly detection after running the code
       torch.autograd.set_detect_anomaly(False)
 
-      for name, param in self.model.named_parameters():
-          if param.requires_grad:
-              print(f"Parameter name: {name}")
-              print(f"Weights: {param.data}")
+      # for name, param in self.model.named_parameters():
+      #     if param.requires_grad:
+      #         print(f"Parameter name: {name}")
+      #         print(f"Weights: {param.data}")
 
-      return self.model
+      return experiment_metrics #all_metrics #,self.model #, sum_mse_loss, mse_states_last_loss, all_metrics
 
   def evaluate_scope(self):
     self.model.eval()
@@ -390,134 +449,21 @@ class SCOPE_straight(object):
     return SCOPE_mean, SCOPE_variance
 
 
-  # -----------------------
-  # Heatmaps for lifegate
-  # -----------------------
-  def get_model_output_dict(self):
+  '''
+  On Policy Calculations
+  '''
+  def calc_V_pi_e(self):
+      all_timesteps = []
+      gamma = self.gamma
+      for j in range(len(self.pi_e)):
+          Timestep_values = []
+          for i in range(len(self.pi_e[j])):
+            # print(i)
+            timestep = gamma ** (i) * self.pi_e[j][i][2]
+            Timestep_values.append(timestep)
 
-    self.model.eval()
+          all_timesteps.append(Timestep_values)
 
-    # Initialize an empty dictionary to store data
-    data = {}
-
-    # Loop through all combinations from [0,0] to [9,9]
-    for i in range(10):
-      for j in range(10):
-          # Prepare input data
-          input_data = torch.tensor([i, j], dtype=torch.float64)
-
-          # Pass input through the self.model
-          output = self.model(input_data)
-
-          # Store data in the dictionary
-          data[(i, j)] = output.item()
-
-    return data
-
-  def plot_heatmap(self, data):
-    values = np.zeros((10, 10))
-    for (x, y), value in data.items():
-        values[y, x] = value
-
-    # Create the heatmap
-    fig = go.Figure(data=go.Heatmap(z=values, colorscale='viridis'))
-
-    # Add colorbar
-    fig.update_layout(coloraxis_colorbar=dict(title='Values',
-                                              ticks='outside',
-                                              tickvals=[np.min(values), np.max(values)],
-                                              ticktext=[np.min(values), np.max(values)]))
-
-    # Add labels and title
-    fig.update_layout(xaxis=dict(tickvals=np.arange(10), ticktext=list(range(10)), title='X'),
-                      yaxis=dict(tickvals=np.arange(9, -1, -1), ticktext=list(range(9, -1, -1)), title='Y', autorange="reversed"),
-                      title='Heatmap')
-
-    fig.show()
-
-  def get_heatmap(self):
-    data = self.get_model_output_dict()
-    self.plot_heatmap(data)
-
-  # ---------------------
-  # State Visitation Heatmap
-  # ---------------------
-
-  def count_state_visits(self):
-    state_visit_counts = {}
-    for trajectory in self.pi_b:
-        for data_point in trajectory:
-            state = tuple(data_point['state'])
-            if state not in state_visit_counts:
-                state_visit_counts[state] = 0
-            state_visit_counts[state] += 1
-
-        # Include last state_next of the trajectory
-        last_state_next = tuple(trajectory[-1]['state_next'])
-        if last_state_next not in state_visit_counts:
-            state_visit_counts[last_state_next] = 0
-        state_visit_counts[last_state_next] += 1
-
-    return state_visit_counts
-
-  def create_state_visit_dict(self):
-      state_visit_dict = {}
-      for i in range(10):
-          for j in range(10):
-              state_visit_dict[(i, j)] = 0
-      return state_visit_dict
-
-  def fill_state_visit_dict(self,state_visit_counts):
-      state_visit_dict = self.create_state_visit_dict()
-      for state, count in state_visit_counts.items():
-          state_visit_dict[state] = count
-      return state_visit_dict
-
-
-  def plot_state_visitations_heatmap(self, state_visit_dict):
-    # Create lists to store x, y, and z values
-    x = []
-    y = []
-    z = []
-
-    # Iterate through the state visit dictionary
-    for state, count in state_visit_dict.items():
-        x.append(state[0])
-        y.append(9 - state[1])  # Flip y-axis to have (0, 0) at the bottom-left
-        z.append(count)
-
-    # Create the heatmap trace
-    trace = go.Heatmap(
-        x=x,
-        y=y,
-        z=z,
-        colorscale='Viridis',  # Choose a colorscale
-        colorbar=dict(title='Visits'),
-        zmin=0,
-        zmax=max(z)  # Set maximum value for the color scale
-    )
-
-    # Create layout
-    layout = go.Layout(
-        title='State Visitations Heatmap',
-        xaxis=dict(title='X-axis'),
-        yaxis=dict(title='Y-axis', tickvals=list(range(10)), ticktext=list(range(9, -1, -1))),
-    )
-
-    # Create figure
-    fig = go.Figure(data=[trace], layout=layout)
-    fig.show()
-
-
-  def get_state_visitation_heatmap(self):
-
-    # Count state visits
-    state_visit_counts = self.count_state_visits()
-
-    # Fill state visit dictionary
-    state_visit_dict = self.fill_state_visit_dict(state_visit_counts)
-
-    # Assuming state_visit_dict is your dictionary with state visitations
-    self.plot_state_visitations_heatmap(state_visit_dict)
-
+      V_est = sum([sum(sublist) for sublist in all_timesteps])/len(self.pi_e)
+      return V_est
 
