@@ -22,7 +22,7 @@ def viz_over_num_trajectories(base_params, num_trajectories):
       params["num_trajectories"] = length  # Update the number of trajectories
       test_experiment = SCOPE_experiment(**params)
       # test_load = existing_experiments(test_experiment,"/content/drive/MyDrive/Lifegate_experiments")
-      test_load = existing_experiments(test_experiment,test_experiment.folder_path) 
+      test_load = existing_experiments(test_experiment) 
 
       # Get epoch-specific values for IS, Train, and Test
       IS_bias, Train_bias, Test_bias, IS_variance, Train_variance, Test_variance, IS_mse, Train_mse, Test_mse = test_load.epoch_specific_values()
@@ -107,7 +107,7 @@ def viz_over_train_set(base_params, train_set_sizes):
       params["percent_to_estimate_phi"] = size  # Update the Percent of set for training phi
       test_experiment = SCOPE_experiment(**params)
       # test_load = existing_experiments(test_experiment,"/content/drive/MyDrive/Lifegate_experiments")
-      test_load = existing_experiments(test_experiment,test_experiment.folder_path)      
+      test_load = existing_experiments(test_experiment)      
 
       # Get epoch-specific values for IS, Train, and Test
       IS_bias, Train_bias, Test_bias, IS_variance, Train_variance, Test_variance, IS_mse, Train_mse, Test_mse = test_load.epoch_specific_values()
