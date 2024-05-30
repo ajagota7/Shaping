@@ -360,25 +360,34 @@ class existing_experiments(object):
 
       IS_mean, IS_variance = self.load_IS_estimate()
 
+      IS_mse = self.calculate_mse(IS_variance, IS_mean)
+      Train_mse = self.calculate_mse(Train_variance, Train_mean)
+      Test_mse = self.calculate_mse(Test_variance, Test_mean)
+
 
 
       fig = make_subplots(rows=2, cols=2, subplot_titles=("Estimate over Epochs",
                                                           "Variance over Epochs", "Train MSE Loss over Epochs",
-                                                          "Total Loss over Epochs"))
+                                                          "MSE over Epochs"))
       IS_mean_line = [IS_mean] * len(epochs)
       fig.add_trace(go.Scatter(x=epochs, y=IS_mean_line, mode='lines', name='IS Estimate'), row=1, col=1)
       # fig.add_trace(go.Scatter(x=epochs, y=IS_mean, mode='lines+markers', name='IS Estimate'), row=1, col=1)
-      fig.add_trace(go.Scatter(x=epochs, y=Train_mean, mode='lines+markers', name='Train Estimate'), row=1, col=1)
-      fig.add_trace(go.Scatter(x=epochs, y=Test_mean, mode='lines+markers', name='Test Estimate'), row=1, col=1)
+      fig.add_trace(go.Scatter(x=epochs, y=Train_mean, mode='lines', name='Train Estimate'), row=1, col=1)
+      fig.add_trace(go.Scatter(x=epochs, y=Test_mean, mode='lines', name='Test Estimate'), row=1, col=1)
       fig.add_trace(go.Scatter(x=epochs, y=on_policy_line, mode='lines', name='On-policy Estimate'), row=1, col=1)
 
       IS_var_line = [IS_variance] * len(epochs)
       fig.add_trace(go.Scatter(x=epochs, y=IS_var_line, mode='lines', name='IS Variance'), row=1, col=2)
-      fig.add_trace(go.Scatter(x=epochs, y=Train_variance, mode='lines+markers', name='Train Variance'), row=1, col=2)
-      fig.add_trace(go.Scatter(x=epochs, y=Test_variance, mode='lines+markers', name='Test Variance'), row=1, col=2)
+      fig.add_trace(go.Scatter(x=epochs, y=Train_variance, mode='lines', name='Train Variance'), row=1, col=2)
+      fig.add_trace(go.Scatter(x=epochs, y=Test_variance, mode='lines', name='Test Variance'), row=1, col=2)
 
-      fig.add_trace(go.Scatter(x=epochs, y=Train_mse_loss, mode='lines+markers', name='Train MSE Loss'), row=2, col=2)
-      fig.add_trace(go.Scatter(x=epochs, y=total_loss, mode='lines+markers', name='Total Loss'), row=2, col=1)
+      # fig.add_trace(go.Scatter(x=epochs, y=Train_mse_loss, mode='lines+markers', name='Train MSE Loss'), row=2, col=2)
+      IS_line = [IS_mse] * len(epochs)
+      fig.add_trace(go.Scatter(x=epochs, y=IS_line, mode='lines', name='IS MSE'), row=2, col=2)
+      fig.add_trace(go.Scatter(x=epochs, y=Train_mse, mode='lines', name='Train MSE'), row=2, col=2)
+      fig.add_trace(go.Scatter(x=epochs, y=Test_mse, mode='lines', name='Test MSE'), row=2, col=2)
+
+      fig.add_trace(go.Scatter(x=epochs, y=total_loss, mode='lines', name='Total Loss'), row=2, col=1)
 
       fig.update_xaxes(title_text="Epoch", row=1, col=1)
       fig.update_xaxes(title_text="Epoch", row=1, col=2)
@@ -387,7 +396,7 @@ class existing_experiments(object):
 
       fig.update_yaxes(title_text="Estimate", row=1, col=1)
       fig.update_yaxes(title_text="Variance", row=1, col=2)
-      fig.update_yaxes(title_text="Total Loss", row=2, col=2)
+      fig.update_yaxes(title_text="MSE", row=2, col=2)
       fig.update_yaxes(title_text="MSE Loss", row=2, col=1)
 
       fig.update_layout(title_text="Metrics over Epochs", showlegend=True)
