@@ -367,8 +367,8 @@ class existing_experiments(object):
 
 
       fig = make_subplots(rows=2, cols=2, subplot_titles=("Estimate over Epochs",
-                                                          "Variance over Epochs", "Train MSE Loss over Epochs",
-                                                          "MSE over Epochs"))
+                                                          "Variance over Epochs", "Shaping Train MSE Loss over Epochs",
+                                                          "Total MSE over Epochs"))
       IS_mean_line = [IS_mean] * len(epochs)
       fig.add_trace(go.Scatter(x=epochs, y=IS_mean_line, mode='lines', name='IS Estimate'), row=1, col=1)
       # fig.add_trace(go.Scatter(x=epochs, y=IS_mean, mode='lines+markers', name='IS Estimate'), row=1, col=1)
