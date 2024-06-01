@@ -3,6 +3,7 @@ from plotly.subplots import make_subplots
 from SCOPE_experiment import SCOPE_experiment
 from existing_experiments import existing_experiments
 import matplotlib.pyplot as plt
+import os
 
 
 def viz_over_num_trajectories(base_params, num_trajectories):
