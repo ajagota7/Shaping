@@ -63,6 +63,85 @@ def viz_over_num_trajectories(base_params, num_trajectories):
   fig.update_layout(title='MSE over Trajectories', xaxis_title='Number of Trajectories', yaxis_title='MSE')
   fig.show()
 
+
+def viz_over_num_trajectories_save(base_params, num_trajectories, save=True, folder_path=None, filename=None):
+    # Initialize lists to store values for IS, Train, and Test
+    IS_bias_values = []
+    Train_bias_values = []
+    Test_bias_values = []
+    IS_variance_values = []
+    Train_variance_values = []
+    Test_variance_values = []
+    IS_mse_values = []
+    Train_mse_values = []
+    Test_mse_values = []
+
+    for length in num_trajectories:
+        # Create experiment instance and load data
+        params = base_params.copy()  # Make a copy to avoid modifying the base parameters
+        params["num_trajectories"] = length  # Update the number of trajectories
+        test_experiment = SCOPE_experiment(**params)
+        test_load = existing_experiments(test_experiment) 
+
+        # Get epoch-specific values for IS, Train, and Test
+        IS_bias, Train_bias, Test_bias, IS_variance, Train_variance, Test_variance, IS_mse, Train_mse, Test_mse = test_load.epoch_specific_values()
+
+        # Append values to respective lists
+        IS_bias_values.append(IS_bias)
+        Train_bias_values.append(Train_bias)
+        Test_bias_values.append(Test_bias)
+        IS_variance_values.append(IS_variance)
+        Train_variance_values.append(Train_variance)
+        Test_variance_values.append(Test_variance)
+        IS_mse_values.append(IS_mse)
+        Train_mse_values.append(Train_mse)
+        Test_mse_values.append(Test_mse)
+
+    # Create a single figure with three subplots
+    fig, axs = plt.subplots(3, 1, figsize=(10, 18))
+    
+    # Plot bias over trajectories
+    axs[0].plot(num_trajectories, IS_bias_values, label='IS Bias')
+    axs[0].plot(num_trajectories, Train_bias_values, label='Train Bias')
+    axs[0].plot(num_trajectories, Test_bias_values, label='Test Bias')
+    axs[0].set_title('Bias over Trajectories')
+    axs[0].set_xlabel('Number of Trajectories')
+    axs[0].set_ylabel('Bias')
+    axs[0].legend()
+
+    # Plot variance over trajectories
+    axs[1].plot(num_trajectories, IS_variance_values, label='IS Variance')
+    axs[1].plot(num_trajectories, Train_variance_values, label='Train Variance')
+    axs[1].plot(num_trajectories, Test_variance_values, label='Test Variance')
+    axs[1].set_title('Variance over Trajectories')
+    axs[1].set_xlabel('Number of Trajectories')
+    axs[1].set_ylabel('Variance')
+    axs[1].legend()
+
+    # Plot MSE over trajectories
+    axs[2].plot(num_trajectories, IS_mse_values, label='IS MSE')
+    axs[2].plot(num_trajectories, Train_mse_values, label='Train MSE')
+    axs[2].plot(num_trajectories, Test_mse_values, label='Test MSE')
+    axs[2].set_title('MSE over Trajectories')
+    axs[2].set_xlabel('Number of Trajectories')
+    axs[2].set_ylabel('MSE')
+    axs[2].legend()
+
+
+
+    plt.tight_layout()
+    plt.suptitle("Metrics over Trajectories", y=1.02)
+
+    folderpath = test_load.folder_path
+    filename = test_load.experiment_instance.generate_file_name()
+    modified_filename = "over_trajectories_" + filename.split('_', 1)[1]
+
+    
+    if save:
+        file_path = os.path.join(folderpath, f"{modified_filename}.png")
+        plt.savefig(file_path)
+    plt.show()
+
   # # Create subplots
   # fig = make_subplots(rows=3, cols=1, subplot_titles=("Bias over Trajectories", "Variance over Trajectories", "MSE over Trajectories"))
 
