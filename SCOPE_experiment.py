@@ -234,6 +234,51 @@ class SCOPE_experiment():
         # torch.save(experiment_data, f"{self.folder_path}/{filename}.pt")
         torch.save(experiment_data, file_path)
 
+    def continue_training(self, epoch):
+      filename = self.generate_file_name()
+      # generate file path with folder and filename
+      file_path = os.path.join(self.folder_path, f"{filename}.pt")
+      loaded_data = torch.load(file_path)
+      
+      # # Access specific data from the loaded dictionary
+      # experiment_metrics = loaded_data["Experiment Metrics"]
+
+      # per_epoch = experiment_metrics["per_epoch"]
+      # model_weights = experiment_metrics["model_weights"]
+      env = self.initialize_env()
+      pi_b = loaded_data["pi_b"]
+      pi_e = loaded_data["pi_e"]
+      P_pi_b = self.action_probs_top_n_epsilon(self.pi_b_top_k, self.pi_b_epsilon)
+      P_pi_e = self.action_probs_top_n_epsilon(self.pi_e_top_k, self.pi_e_epsilon)
+      
+      latest_weights = loaded_data["Experiment Metrics"]["model_weights"][-1]['model_state']
+
+      experiment_class = SCOPE_straight(latest_weights, self.gamma, self.num_bootstraps, pi_b, P_pi_b, pi_e, P_pi_e, self.percent_to_estimate_phi, self.shaping_feature, env, self.dtype)
+      all_metrics_new = experiment_class.train_var_scope(epoch, self.learning_rate, self.shaping_coefficient, self.scope_weight, self.mse_weight)
+      
+      final_epoch = loaded_data["Experiment Metrics"]["model_weights"][-1]['epoch']
+
+      # experiment_metrics = loaded_data["Experiment Metrics"]
+
+
+      # Update epochs in the new metrics
+      for e in all_metrics_new["model_weights"]:
+          e['epoch'] += final_epoch
+      for ep in all_metrics_new["per_epoch"]:
+          ep['epoch'] += final_epoch
+
+      # Append new metrics to the existing metrics
+      loaded_data["Experiment Metrics"]["model_weights"].extend(all_metrics_new["model_weights"])
+      loaded_data["Experiment Metrics"]["per_epoch"].extend(all_metrics_new["per_epoch"])
+
+      # Save the updated data back to the same file
+      torch.save(loaded_data, file_path)
+
+
+
+
+       
+
     def load_experiment(self):
       filename = self.generate_file_name()
       # generate file path with folder and filename
