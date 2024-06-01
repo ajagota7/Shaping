@@ -4,6 +4,9 @@ import torch
 import numpy as np
 import os
 from neural_net import NN_l1_l2_reg
+import matplotlib.pyplot as plt
+
+
 
 
 class existing_experiments(object):
@@ -405,67 +408,130 @@ class existing_experiments(object):
       fig.show()
 
 
-    def plot_metrics_save(self, save=True):
-        '''
-        Plot metrics over epochs and optionally save the plot
-        '''
-        Train_mean, Train_variance, Train_mse_loss, total_loss, Test_mean, Test_variance = self.preprocess_epoch_metrics()
+    # def plot_metrics_save(self, save=True):
+    #     '''
+    #     Plot metrics over epochs and optionally save the plot
+    #     '''
+    #     Train_mean, Train_variance, Train_mse_loss, total_loss, Test_mean, Test_variance = self.preprocess_epoch_metrics()
 
-        epochs = np.arange(1, len(Train_mean) + 1)
+    #     epochs = np.arange(1, len(Train_mean) + 1)
 
-        on_policy_estimate = self.load_on_policy_estimate()
-        # Create a list representing on-policy estimate for each epoch
-        on_policy_line = [on_policy_estimate] * len(epochs)
+    #     on_policy_estimate = self.load_on_policy_estimate()
+    #     # Create a list representing on-policy estimate for each epoch
+    #     on_policy_line = [on_policy_estimate] * len(epochs)
 
-        IS_mean, IS_variance = self.load_IS_estimate()
+    #     IS_mean, IS_variance = self.load_IS_estimate()
 
-        IS_mse = self.calculate_mse(IS_variance, IS_mean)
-        Train_mse = self.calculate_mse(Train_variance, Train_mean)
-        Test_mse = self.calculate_mse(Test_variance, Test_mean)
+    #     IS_mse = self.calculate_mse(IS_variance, IS_mean)
+    #     Train_mse = self.calculate_mse(Train_variance, Train_mean)
+    #     Test_mse = self.calculate_mse(Test_variance, Test_mean)
 
-        fig = make_subplots(rows=2, cols=2, subplot_titles=("Estimate over Epochs",
-                                                            "Variance over Epochs", "Shaping Train MSE Loss over Epochs",
-                                                            "Total MSE over Epochs"))
-        IS_mean_line = [IS_mean] * len(epochs)
-        fig.add_trace(go.Scatter(x=epochs, y=IS_mean_line, mode='lines', name='IS Estimate'), row=1, col=1)
-        fig.add_trace(go.Scatter(x=epochs, y=Train_mean, mode='lines', name='Train Estimate'), row=1, col=1)
-        fig.add_trace(go.Scatter(x=epochs, y=Test_mean, mode='lines', name='Test Estimate'), row=1, col=1)
-        fig.add_trace(go.Scatter(x=epochs, y=on_policy_line, mode='lines', name='On-policy Estimate'), row=1, col=1)
+    #     fig = make_subplots(rows=2, cols=2, subplot_titles=("Estimate over Epochs",
+    #                                                         "Variance over Epochs", "Shaping Train MSE Loss over Epochs",
+    #                                                         "Total MSE over Epochs"))
+    #     IS_mean_line = [IS_mean] * len(epochs)
+    #     fig.add_trace(go.Scatter(x=epochs, y=IS_mean_line, mode='lines', name='IS Estimate'), row=1, col=1)
+    #     fig.add_trace(go.Scatter(x=epochs, y=Train_mean, mode='lines', name='Train Estimate'), row=1, col=1)
+    #     fig.add_trace(go.Scatter(x=epochs, y=Test_mean, mode='lines', name='Test Estimate'), row=1, col=1)
+    #     fig.add_trace(go.Scatter(x=epochs, y=on_policy_line, mode='lines', name='On-policy Estimate'), row=1, col=1)
 
-        IS_var_line = [IS_variance] * len(epochs)
-        fig.add_trace(go.Scatter(x=epochs, y=IS_var_line, mode='lines', name='IS Variance'), row=1, col=2)
-        fig.add_trace(go.Scatter(x=epochs, y=Train_variance, mode='lines', name='Train Variance'), row=1, col=2)
-        fig.add_trace(go.Scatter(x=epochs, y=Test_variance, mode='lines', name='Test Variance'), row=1, col=2)
+    #     IS_var_line = [IS_variance] * len(epochs)
+    #     fig.add_trace(go.Scatter(x=epochs, y=IS_var_line, mode='lines', name='IS Variance'), row=1, col=2)
+    #     fig.add_trace(go.Scatter(x=epochs, y=Train_variance, mode='lines', name='Train Variance'), row=1, col=2)
+    #     fig.add_trace(go.Scatter(x=epochs, y=Test_variance, mode='lines', name='Test Variance'), row=1, col=2)
         
-        fig.add_trace(go.Scatter(x=epochs, y=Train_mse_loss, mode='lines', name='Train MSE Loss'), row=2, col=1)
-        IS_line = [IS_mse] * len(epochs)
-        fig.add_trace(go.Scatter(x=epochs, y=IS_line, mode='lines', name='IS MSE'), row=2, col=2)
-        fig.add_trace(go.Scatter(x=epochs, y=Train_mse, mode='lines', name='Train MSE'), row=2, col=2)
-        fig.add_trace(go.Scatter(x=epochs, y=Test_mse, mode='lines', name='Test MSE'), row=2, col=2)
+    #     fig.add_trace(go.Scatter(x=epochs, y=Train_mse_loss, mode='lines', name='Train MSE Loss'), row=2, col=1)
+    #     IS_line = [IS_mse] * len(epochs)
+    #     fig.add_trace(go.Scatter(x=epochs, y=IS_line, mode='lines', name='IS MSE'), row=2, col=2)
+    #     fig.add_trace(go.Scatter(x=epochs, y=Train_mse, mode='lines', name='Train MSE'), row=2, col=2)
+    #     fig.add_trace(go.Scatter(x=epochs, y=Test_mse, mode='lines', name='Test MSE'), row=2, col=2)
 
-        fig.update_xaxes(title_text="Epoch", row=1, col=1)
-        fig.update_xaxes(title_text="Epoch", row=1, col=2)
-        fig.update_xaxes(title_text="Epoch", row=2, col=1)
-        fig.update_xaxes(title_text="Epoch", row=2, col=2)
+    #     fig.update_xaxes(title_text="Epoch", row=1, col=1)
+    #     fig.update_xaxes(title_text="Epoch", row=1, col=2)
+    #     fig.update_xaxes(title_text="Epoch", row=2, col=1)
+    #     fig.update_xaxes(title_text="Epoch", row=2, col=2)
 
-        fig.update_yaxes(title_text="Estimate", row=1, col=1)
-        fig.update_yaxes(title_text="Variance", row=1, col=2)
-        fig.update_yaxes(title_text="MSE Loss", row=2, col=1)
-        fig.update_yaxes(title_text="MSE", row=2, col=2)
+    #     fig.update_yaxes(title_text="Estimate", row=1, col=1)
+    #     fig.update_yaxes(title_text="Variance", row=1, col=2)
+    #     fig.update_yaxes(title_text="MSE Loss", row=2, col=1)
+    #     fig.update_yaxes(title_text="MSE", row=2, col=2)
 
-        fig.update_layout(title_text="Metrics over Epochs", showlegend=True)
+    #     fig.update_layout(title_text="Metrics over Epochs", showlegend=True)
 
-        filename = self.experiment_instance.generate_file_name()
-        # filename = self.generate_file_name()
+    #     filename = self.experiment_instance.generate_file_name()
+    #     # filename = self.generate_file_name()
 
-        # generate file path with folder and filename
-        file_path = os.path.join(self.folder_path, f"{filename}.png")
+    #     # generate file path with folder and filename
+    #     file_path = os.path.join(self.folder_path, f"{filename}.png")
 
-        if save:
-            fig.write_image(file_path)
-            fig.show()
-        else:
-            fig.show()
+    #     if save:
+    #         fig.write_image(file_path)
+    #         fig.show()
+    #     else:
+    #         fig.show()
+
+    def plot_metrics_save(self, save=True):
+      '''
+      Plot metrics over epochs and optionally save the plot
+      '''
+      Train_mean, Train_variance, Train_mse_loss, total_loss, Test_mean, Test_variance = self.preprocess_epoch_metrics()
+
+      epochs = np.arange(1, len(Train_mean) + 1)
+
+      on_policy_estimate = self.load_on_policy_estimate()
+      # Create a list representing on-policy estimate for each epoch
+      on_policy_line = [on_policy_estimate] * len(epochs)
+
+      IS_mean, IS_variance = self.load_IS_estimate()
+
+      IS_mse = self.calculate_mse(IS_variance, IS_mean)
+      Train_mse = self.calculate_mse(Train_variance, Train_mean)
+      Test_mse = self.calculate_mse(Test_variance, Test_mean)
+
+      IS_mean_line = [IS_mean] * len(epochs)
+      IS_var_line = [IS_variance] * len(epochs)
+      IS_line = [IS_mse] * len(epochs)
+
+      fig, axs = plt.subplots(2, 2, figsize=(12, 8))
+      
+      axs[0, 0].plot(epochs, IS_mean_line, label='IS Estimate')
+      axs[0, 0].plot(epochs, Train_mean, label='Train Estimate')
+      axs[0, 0].plot(epochs, Test_mean, label='Test Estimate')
+      axs[0, 0].plot(epochs, on_policy_line, label='On-policy Estimate')
+      axs[0, 0].set_title('Estimate over Epochs')
+      axs[0, 0].legend()
+
+      axs[0, 1].plot(epochs, IS_var_line, label='IS Variance')
+      axs[0, 1].plot(epochs, Train_variance, label='Train Variance')
+      axs[0, 1].plot(epochs, Test_variance, label='Test Variance')
+      axs[0, 1].set_title('Variance over Epochs')
+      axs[0, 1].legend()
+      
+      axs[1, 0].plot(epochs, Train_mse_loss, label='Train MSE Loss')
+      axs[1, 0].set_title('Shaping Train MSE Loss over Epochs')
+      
+      axs[1, 1].plot(epochs, IS_line, label='IS MSE')
+      axs[1, 1].plot(epochs, Train_mse, label='Train MSE')
+      axs[1, 1].plot(epochs, Test_mse, label='Test MSE')
+      axs[1, 1].set_title('Total MSE over Epochs')
+      axs[1, 1].legend()
+
+      for ax in axs.flat:
+          ax.set(xlabel='Epoch', ylabel='Value')
+
+      # Hide x labels and tick labels for top plots and y ticks for right plots.
+      for ax in axs.flat:
+          ax.label_outer()
+
+      plt.suptitle("Metrics over Epochs", y=1.02)
+      
+      if save:
+          filename = self.experiment_instance.generate_file_name()
+          # filename = self.generate_file_name()
+          # generate file path with folder and filename
+          file_path = os.path.join(self.folder_path, f"{filename}.png")
+          plt.savefig(file_path)
+      plt.show()
 
     # def loss_plotting(self):
 
