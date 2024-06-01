@@ -459,7 +459,7 @@ def plot_metrics_save(self, save=True):
     # filename = self.generate_file_name()
 
     # generate file path with folder and filename
-    file_path = os.path.join(self.folder_path, f"{filename}.pt")
+    file_path = os.path.join(self.folder_path, f"{filename}.png")
 
     if save:
         fig.write_image(file_path)
