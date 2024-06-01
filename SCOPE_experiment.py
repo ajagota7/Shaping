@@ -239,6 +239,7 @@ class SCOPE_experiment():
       # generate file path with folder and filename
       file_path = os.path.join(self.folder_path, f"{filename}.pt")
       loaded_data = torch.load(file_path)
+      experiment_parameters = loaded_data["Experiment Parameters"]
       
       # # Access specific data from the loaded dictionary
       # experiment_metrics = loaded_data["Experiment Metrics"]
@@ -253,7 +254,16 @@ class SCOPE_experiment():
       
       latest_weights = loaded_data["Experiment Metrics"]["model_weights"][-1]['model_state']
 
-      experiment_class = SCOPE_straight(latest_weights, self.gamma, self.num_bootstraps, pi_b, P_pi_b, pi_e, P_pi_e, self.percent_to_estimate_phi, self.shaping_feature, env, self.dtype)
+      model = NN_l1_l2_reg(input_dim=2,
+                      hidden_dims=experiment_parameters["hidden_dims"],
+                      output_dim=1, dtype = experiment_parameters["dtype"],
+                      l1_lambda=experiment_parameters["l1_reg"],
+                      l2_lambda = experiment_parameters["l2_reg"])
+
+      # Load the final weights into the model
+      model.load_state_dict(latest_weights)
+
+      experiment_class = SCOPE_straight(model, self.gamma, self.num_bootstraps, pi_b, P_pi_b, pi_e, P_pi_e, self.percent_to_estimate_phi, self.shaping_feature, env, self.dtype)
       all_metrics_new = experiment_class.train_var_scope(epoch, self.learning_rate, self.shaping_coefficient, self.scope_weight, self.mse_weight)
       
       final_epoch = loaded_data["Experiment Metrics"]["model_weights"][-1]['epoch']
