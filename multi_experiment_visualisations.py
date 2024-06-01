@@ -2,6 +2,8 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 from SCOPE_experiment import SCOPE_experiment
 from existing_experiments import existing_experiments
+import matplotlib.pyplot as plt
+
 
 def viz_over_num_trajectories(base_params, num_trajectories):
   # Initialize lists to store values for IS, Train, and Test
