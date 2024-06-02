@@ -286,8 +286,33 @@ class SCOPE_experiment():
 
 
 
+    def get_multi_experiment(self):
+        filename = self.generate_file_name()
+        # generate file path with folder and filename
+        file_path = os.path.join(self.folder_path, f"{filename}.pt")
+        loaded_data = torch.load(file_path)
+        experiment_parameters = loaded_data["Experiment Parameters"]
+        
+        env = self.initialize_env()
+        pi_b = loaded_data["pi_b"]
+        pi_e = loaded_data["pi_e"]
+        P_pi_b = self.action_probs_top_n_epsilon(self.pi_b_top_k, self.pi_b_epsilon)
+        P_pi_e = self.action_probs_top_n_epsilon(self.pi_e_top_k, self.pi_e_epsilon)
+        
+        latest_weights = loaded_data["Experiment Metrics"]["model_weights"][-1]['model_state']
 
-       
+        model = NN_l1_l2_reg(input_dim=2,
+                        hidden_dims=experiment_parameters["hidden_dims"],
+                        output_dim=1, dtype = experiment_parameters["dtype"],
+                        l1_lambda=experiment_parameters["l1_reg"],
+                        l2_lambda = experiment_parameters["l2_reg"])
+
+        # Load the final weights into the model
+        model.load_state_dict(latest_weights)
+
+        experiment_class = SCOPE_straight(model, self.gamma, self.num_bootstraps, pi_b, P_pi_b, pi_e, P_pi_e, self.percent_to_estimate_phi, self.shaping_feature, env, self.dtype)
+        IS_all_means, IS_all_variances = experiment_class.IS_pipeline_multi(num_multi=5)
+        return IS_all_means, IS_all_variances
 
     def load_experiment(self):
       filename = self.generate_file_name()
