@@ -282,9 +282,11 @@ class SCOPE_straight(object):
 
     return states_next_output.squeeze(), states_current_output.squeeze()
 
-  def bootstrap_straight(self, padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output):
-      seed = 42
-      torch.manual_seed(seed)
+  def bootstrap_straight(self, padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output, multi = None):
+      
+      if multi is None:
+        seed = 42
+        torch.manual_seed(seed)
 
       num_samples = self.num_bootstraps
       num_bootstraps_lin = num_samples*padded_timestep_tensors.shape[0]
@@ -477,7 +479,7 @@ class SCOPE_straight(object):
     # timestep_bootstraps_IS, rewards_bootstraps_IS, weights_bootstraps_IS = self.bootstrap_IS(padded_timestep_tensors_IS, padded_reward_tensors_IS, padded_weight_tensors_IS)
     IS_all_means = []
     IS_all_variances = []
-    for i in range(1,num_multi):
+    for i in range(num_multi):
              
       IS_bootstraps = self.bootstrap_IS(padded_timestep_tensors_IS, padded_reward_tensors_IS, padded_weight_tensors_IS, multi = num_multi)
       # IS_mean, IS_variance = self.calc_variance_IS(timestep_bootstraps_IS, rewards_bootstraps_IS, weights_bootstraps_IS)
@@ -487,9 +489,42 @@ class SCOPE_straight(object):
 
     return IS_all_means, IS_all_variances
 
-  def multi_experiment(self, num_experiments):
+  def SCOPE_pipeline_multi(self, num_multi):
+
+      Train_means, Train_variances = []
+      Test_means, Test_variances = []
+      
+      self.model.train()
+      padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor, states_last_tensor, psi_last_tensor = self.prepare_SCOPE_phi()
+      states_next_output, states_current_output = self.pass_states(padded_states_next_tensors, padded_states_current_tensors)
+      
+      for i in range(num_multi):
+        
+        scope_bootstraps = self.bootstrap_straight(padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output, multi=num_multi)
+        Train_mean, Train_variance = self.calc_var_straight(scope_bootstraps)
+        Train_means.append(Train_mean)
+        Train_variances.append(Train_variance)
+
+      
+      self.model.eval()
+      padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors = self.prepare_SCOPE_test()        
+      states_next_output, states_current_output = self.pass_states(padded_states_next_tensors, padded_states_current_tensors)
+      
+      for j in range(num_multi):
+         
+         scope_bootstraps = self.bootstrap_straight(padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output, multi=num_multi)
+         Test_mean, Test_variance = self.calc_var_straight(scope_bootstraps)
+         Test_means.append(Test_mean)
+         Test_variances.append(Test_variance)
+      
+      return Train_means, Train_variances, Test_means, Test_variances
+           
+
+
+  # def multi_experiment(self, num_experiments):
+  #    IS_all_means, IS_all_variances = self.IS_pipeline_multi(num_experiments)
      
-     return IS_mean, IS_variance, SCOPE_mean, SCOPE_variance
+  #    return IS_all_means, IS_all_variances, SCOPE_mean, SCOPE_variance
      
 
   '''

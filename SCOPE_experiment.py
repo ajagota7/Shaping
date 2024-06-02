@@ -312,7 +312,10 @@ class SCOPE_experiment():
 
         experiment_class = SCOPE_straight(model, self.gamma, self.num_bootstraps, pi_b, P_pi_b, pi_e, P_pi_e, self.percent_to_estimate_phi, self.shaping_feature, env, self.dtype)
         IS_all_means, IS_all_variances = experiment_class.IS_pipeline_multi(num_multi=5)
-        return IS_all_means, IS_all_variances
+
+        Train_means, Train_variances, Test_means, Test_variances = experiment_class.SCOPE_pipeline_multi(self, num_multi = 5)
+
+        return IS_all_means, IS_all_variances, Train_means, Train_variances, Test_means, Test_variances
 
     def load_experiment(self):
       filename = self.generate_file_name()
