@@ -494,7 +494,7 @@ class SCOPE_straight(object):
       Train_means, Train_variances = [], []
       Test_means, Test_variances = [], []
       
-      self.model.train()
+      self.model.eval()
       padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor, states_last_tensor, psi_last_tensor = self.prepare_SCOPE_phi()
       states_next_output, states_current_output = self.pass_states(padded_states_next_tensors, padded_states_current_tensors)
       
@@ -506,7 +506,7 @@ class SCOPE_straight(object):
         Train_variances.append(Train_variance)
 
       
-      self.model.eval()
+      # self.model.eval()
       padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors = self.prepare_SCOPE_test()        
       states_next_output, states_current_output = self.pass_states(padded_states_next_tensors, padded_states_current_tensors)
       
