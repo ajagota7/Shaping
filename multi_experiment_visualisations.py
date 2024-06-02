@@ -146,7 +146,7 @@ def viz_over_num_trajectories_save(base_params, num_trajectories, save=True, fol
         plt.savefig(file_path)
     plt.show()
 
-def viz_over_num_trajectories_save(base_params, num_trajectories, save=True, folder_path=None, filename=None):
+def viz_over_num_trajectories_multi(base_params, num_trajectories, save=True, folder_path=None, filename=None):
     # Initialize lists to store values for IS, Train, and Test
     IS_bias_values = []
     Train_bias_values = []
