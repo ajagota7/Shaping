@@ -221,9 +221,11 @@ class SCOPE_straight(object):
   # ----------------
 
 
-  def bootstrap_IS(self, padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors):
-    seed = 42
-    torch.manual_seed(seed)
+  def bootstrap_IS(self, padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, multi = None):
+    
+    if multi is None:
+      seed = 42
+      torch.manual_seed(seed)
 
     num_samples = self.num_bootstraps
     num_bootstraps_lin = num_samples*padded_timestep_tensors.shape[0]
@@ -448,6 +450,47 @@ class SCOPE_straight(object):
 
     return SCOPE_mean, SCOPE_variance
 
+  '''
+  Multi Experiment Bootstrapping Error Bars
+  '''
+
+  # def bootstrap_straight(self, padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output):
+  #   seed = 42
+  #   torch.manual_seed(seed)
+
+  #   num_samples = self.num_bootstraps
+  #   num_bootstraps_lin = num_samples*padded_timestep_tensors.shape[0]
+
+  #   # Sample indices with replacement
+  #   sampled_indices = torch.randint(0, len(padded_timestep_tensors), size=(num_bootstraps_lin,), dtype=torch.long)
+
+  #   reshaped_size = (num_samples, padded_timestep_tensors.shape[0], padded_timestep_tensors.shape[1])
+
+  #   padded_scope = self.gamma**(padded_timestep_tensors)*padded_weight_tensors*(padded_reward_tensors +self.gamma*states_next_output - states_current_output)
+  #   scope_bootstraps = padded_scope[sampled_indices].view(reshaped_size)
+
+  #   return scope_bootstraps
+
+
+  def IS_pipeline_multi(self, num_multi):
+    padded_timestep_tensors_IS, padded_reward_tensors_IS, padded_weight_tensors_IS = self.prepare_IS()
+    # timestep_bootstraps_IS, rewards_bootstraps_IS, weights_bootstraps_IS = self.bootstrap_IS(padded_timestep_tensors_IS, padded_reward_tensors_IS, padded_weight_tensors_IS)
+    IS_all_means = []
+    IS_all_variances = []
+    for i in range(1,num_multi):
+             
+      IS_bootstraps = self.bootstrap_IS(padded_timestep_tensors_IS, padded_reward_tensors_IS, padded_weight_tensors_IS, multi = num_multi)
+      # IS_mean, IS_variance = self.calc_variance_IS(timestep_bootstraps_IS, rewards_bootstraps_IS, weights_bootstraps_IS)
+      IS_mean, IS_variance = self.calc_var_IS(IS_bootstraps)
+      IS_all_means.append(IS_mean)
+      IS_all_variances.append(IS_variance)
+
+    return IS_all_means, IS_all_variances
+
+  def multi_experiment(self, num_experiments):
+     
+     return IS_mean, IS_variance, SCOPE_mean, SCOPE_variance
+     
 
   '''
   On Policy Calculations
