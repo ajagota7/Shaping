@@ -88,6 +88,20 @@ class existing_experiments(object):
       IS_variance = loaded_data['IS Estimate']['Variance']
       return IS_estimate, IS_variance
 
+    
+    def load_multi_estimates(self):
+      filename =  self.experiment_instance.generate_file_name()
+      file_path = os.path.join(self.folder_path, f"{filename}.pt")
+      # loaded_data = torch.load(file_path)
+
+      IS_all_means, IS_all_variances, Train_means, Train_variances, Test_means, Test_variances = self.experiment_instance.get_multi_experiment()
+
+      return IS_all_means, IS_all_variances, Train_means, Train_variances, Test_means, Test_variances
+    
+    '''
+    Preprocessing
+    '''
+
     def preprocess_epoch_metrics(self):
         per_epoch, _ = self.load_experiment_metrics()
 
@@ -114,7 +128,9 @@ class existing_experiments(object):
         return Train_mean, Train_variance, Train_mse_loss, total_loss, Test_mean, Test_variance
 
 
-
+    '''
+    Calculations
+    '''
     def calculate_bias(self, estimate):
       on_policy_estimate = self.load_on_policy_estimate()
       bias = estimate - on_policy_estimate
@@ -125,6 +141,9 @@ class existing_experiments(object):
       mse = variance + bias**2
       return mse
 
+    '''
+    Load model
+    '''
 
     def load_model(self, epoch = None):
       filename = self.experiment_instance.generate_file_name()
@@ -534,6 +553,9 @@ class existing_experiments(object):
             file_path = os.path.join(self.folder_path, f"{filename}.png")
             plt.savefig(file_path)
         plt.show()
+
+
+    
 
     # def loss_plotting(self):
 

@@ -484,8 +484,8 @@ class SCOPE_straight(object):
       IS_bootstraps = self.bootstrap_IS(padded_timestep_tensors_IS, padded_reward_tensors_IS, padded_weight_tensors_IS, multi = num_multi)
       # IS_mean, IS_variance = self.calc_variance_IS(timestep_bootstraps_IS, rewards_bootstraps_IS, weights_bootstraps_IS)
       IS_mean, IS_variance = self.calc_var_IS(IS_bootstraps)
-      IS_all_means.append(IS_mean)
-      IS_all_variances.append(IS_variance)
+      IS_all_means.append(IS_mean.item())
+      IS_all_variances.append(IS_variance.item())
 
     return IS_all_means, IS_all_variances
 
@@ -502,8 +502,8 @@ class SCOPE_straight(object):
         
         scope_bootstraps = self.bootstrap_straight(padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output, multi=num_multi)
         Train_mean, Train_variance = self.calc_var_straight(scope_bootstraps)
-        Train_means.append(Train_mean)
-        Train_variances.append(Train_variance)
+        Train_means.append(Train_mean.item())
+        Train_variances.append(Train_variance.item())
 
       
       # self.model.eval()
@@ -514,8 +514,8 @@ class SCOPE_straight(object):
          
          scope_bootstraps = self.bootstrap_straight(padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output, multi=num_multi)
          Test_mean, Test_variance = self.calc_var_straight(scope_bootstraps)
-         Test_means.append(Test_mean)
-         Test_variances.append(Test_variance)
+         Test_means.append(Test_mean.item())
+         Test_variances.append(Test_variance.item())
       
       return Train_means, Train_variances, Test_means, Test_variances
            
