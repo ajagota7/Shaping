@@ -140,6 +140,36 @@ class existing_experiments(object):
       bias = self.calculate_bias(estimate)
       mse = variance + bias**2
       return mse
+    
+
+    def calculate_multi_bias(self, multi_estimates):
+       on_policy_estimate = self.load_on_policy_estimate()
+       biases = [estimate - on_policy_estimate for estimate in multi_estimates]
+
+       return biases
+    
+    def calculate_multi_mse(self, multi_variances, multi_estimates):
+       biases = self.calculate_multi_bias(multi_estimates)
+       multi_mse = [multi_variances[i] + biases[i]**2 for i in range(len(multi_estimates))]
+
+       return multi_mse
+
+
+    def get_multi_values(self):
+       
+       IS_all_means, IS_all_variances, Train_means, Train_variances, Test_means, Test_variances = self.load_multi_estimates()
+
+       IS_bias = self.calculate_multi_bias(IS_all_means)
+       Train_bias = self.calculate_multi_bias(Train_means)
+       Test_bias = self.calculate_multi_bias(Test_means)
+       IS_variance = IS_all_variances
+       Train_variance = Train_variances
+       Test_variance = Test_variances
+       IS_mse = self.calculate_multi_mse(IS_variance, IS_all_means)
+       Train_mse = self.calculate_multi_mse(Train_variance, Train_means)
+       Test_mse = self.calculate_mse(Test_variance,Test_means)
+       
+       return IS_bias, Train_bias, Test_bias, IS_variance, Train_variance, Test_variance, IS_mse, Train_mse, Test_mse
 
     '''
     Load model

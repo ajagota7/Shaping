@@ -4,6 +4,7 @@ from SCOPE_experiment import SCOPE_experiment
 from existing_experiments import existing_experiments
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 
 def viz_over_num_trajectories(base_params, num_trajectories):
@@ -144,6 +145,132 @@ def viz_over_num_trajectories_save(base_params, num_trajectories, save=True, fol
         file_path = os.path.join(folderpath, f"{modified_filename}.png")
         plt.savefig(file_path)
     plt.show()
+
+def viz_over_num_trajectories_save(base_params, num_trajectories, save=True, folder_path=None, filename=None):
+    # Initialize lists to store values for IS, Train, and Test
+    IS_bias_values = []
+    Train_bias_values = []
+    Test_bias_values = []
+    IS_variance_values = []
+    Train_variance_values = []
+    Test_variance_values = []
+    IS_mse_values = []
+    Train_mse_values = []
+    Test_mse_values = []
+
+    IS_bias_errors = []
+    Train_bias_errors = []
+    Test_bias_errors = []
+    IS_variance_errors = []
+    Train_variance_errors = []
+    Test_variance_errors = []
+    IS_mse_errors = []
+    Train_mse_errors = []
+    Test_mse_errors = []
+
+    for length in num_trajectories:
+        # Create experiment instance and load data
+        params = base_params.copy()  # Make a copy to avoid modifying the base parameters
+        params["num_trajectories"] = length  # Update the number of trajectories
+        test_experiment = SCOPE_experiment(**params)
+        test_load = existing_experiments(test_experiment) 
+
+        # Get epoch-specific values for IS, Train, and Test
+        IS_bias, Train_bias, Test_bias, IS_variance, Train_variance, Test_variance, IS_mse, Train_mse, Test_mse = test_load.get_multi_values()
+
+        # Calculate mean and standard deviation for the metrics
+        IS_bias_values.append(np.mean(IS_bias))
+        Train_bias_values.append(np.mean(Train_bias))
+        Test_bias_values.append(np.mean(Test_bias))
+        IS_variance_values.append(np.mean(IS_variance))
+        Train_variance_values.append(np.mean(Train_variance))
+        Test_variance_values.append(np.mean(Test_variance))
+        IS_mse_values.append(np.mean(IS_mse))
+        Train_mse_values.append(np.mean(Train_mse))
+        Test_mse_values.append(np.mean(Test_mse))
+
+        IS_bias_errors.append(np.std(IS_bias))
+        Train_bias_errors.append(np.std(Train_bias))
+        Test_bias_errors.append(np.std(Test_bias))
+        IS_variance_errors.append(np.std(IS_variance))
+        Train_variance_errors.append(np.std(Train_variance))
+        Test_variance_errors.append(np.std(Test_variance))
+        IS_mse_errors.append(np.std(IS_mse))
+        Train_mse_errors.append(np.std(Train_mse))
+        Test_mse_errors.append(np.std(Test_mse))
+
+    # Create a single figure with three subplots
+    fig, axs = plt.subplots(3, 1, figsize=(10, 18))
+    
+    # Plot bias over trajectories with error bars
+    axs[0].errorbar(num_trajectories, IS_bias_values, yerr=IS_bias_errors, label='IS Bias', capsize=5)
+    axs[0].errorbar(num_trajectories, Train_bias_values, yerr=Train_bias_errors, label='Train Bias', capsize=5)
+    axs[0].errorbar(num_trajectories, Test_bias_values, yerr=Test_bias_errors, label='Test Bias', capsize=5)
+    axs[0].set_title('Bias over Trajectories')
+    axs[0].set_xlabel('Number of Trajectories')
+    axs[0].set_ylabel('Bias')
+    axs[0].legend()
+
+    # Plot variance over trajectories with error bars
+    axs[1].errorbar(num_trajectories, IS_variance_values, yerr=IS_variance_errors, label='IS Variance', capsize=5)
+    axs[1].errorbar(num_trajectories, Train_variance_values, yerr=Train_variance_errors, label='Train Variance', capsize=5)
+    axs[1].errorbar(num_trajectories, Test_variance_values, yerr=Test_variance_errors, label='Test Variance', capsize=5)
+    axs[1].set_title('Variance over Trajectories')
+    axs[1].set_xlabel('Number of Trajectories')
+    axs[1].set_ylabel('Variance')
+    axs[1].legend()
+
+    # Plot MSE over trajectories with error bars
+    axs[2].errorbar(num_trajectories, IS_mse_values, yerr=IS_mse_errors, label='IS MSE', capsize=5)
+    axs[2].errorbar(num_trajectories, Train_mse_values, yerr=Train_mse_errors, label='Train MSE', capsize=5)
+    axs[2].errorbar(num_trajectories, Test_mse_values, yerr=Test_mse_errors, label='Test MSE', capsize=5)
+    axs[2].set_title('MSE over Trajectories')
+    axs[2].set_xlabel('Number of Trajectories')
+    axs[2].set_ylabel('MSE')
+    axs[2].legend()
+
+    plt.tight_layout()
+    plt.suptitle("Metrics over Trajectories", y=1.02)
+
+    if save:
+        if folder_path is None:
+            folder_path = test_load.folder_path
+        if filename is None:
+            filename = test_load.experiment_instance.generate_file_name()
+            filename = "over_trajectories_" + filename.split('_', 1)[1]
+        file_path = os.path.join(folder_path, f"{filename}.png")
+        plt.savefig(file_path)
+    plt.show()
+
+def save__experiments_over_trajectories(base_params_load, num_trajectories):
+  for i in num_trajectories:
+    print("-"*100)
+    print(f"{i} trajectories: ")
+    print("-"*100)
+    params = base_params_load.copy()
+    params["num_trajectories"] = i
+    test_experiment = SCOPE_experiment(**params)
+    test_load = existing_experiments(test_experiment)
+    test_load.plot_metrics_save(save = True)
+    # test_load.plot_metrics()
+    print(test_load.experiment_instance.generate_file_name())
+
+    viz_over_num_trajectories_save(base_params_load, num_trajectories)
+
+# def save__experiments_over_trajectories_bars(base_params_load, num_trajectories):
+#   for i in num_trajectories:
+#     print("-"*100)
+#     print(f"{i} trajectories: ")
+#     print("-"*100)
+#     params = base_params_load.copy()
+#     params["num_trajectories"] = i
+#     test_experiment = SCOPE_experiment(**params)
+#     test_load = existing_experiments(test_experiment)
+#     test_load.plot_metrics_save(save = True)
+#     # test_load.plot_metrics()
+#     print(test_load.experiment_instance.generate_file_name())
+
+#     viz_over_num_trajectories_save(base_params_load, num_trajectories)
 
   # # Create subplots
   # fig = make_subplots(rows=3, cols=1, subplot_titles=("Bias over Trajectories", "Variance over Trajectories", "MSE over Trajectories"))
