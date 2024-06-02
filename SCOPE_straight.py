@@ -491,8 +491,8 @@ class SCOPE_straight(object):
 
   def SCOPE_pipeline_multi(self, num_multi):
 
-      Train_means, Train_variances = []
-      Test_means, Test_variances = []
+      Train_means, Train_variances = [], []
+      Test_means, Test_variances = [], []
       
       self.model.train()
       padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors, padded_psi_tensors, mask_tensor, states_last_tensor, psi_last_tensor = self.prepare_SCOPE_phi()
