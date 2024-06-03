@@ -19,6 +19,13 @@ def smallest_distance_to_recovery(current_state, env):
     return min(manhattan_distance(current_state, recovery) for recovery in env.possible_recoveries)
 
 
+def smallest_distance_to_dead_end_or_death(current_state,env):
+
+    all_death = env.main_deaths + env.dead_ends
+    return min(manhattan_distance(current_state, dead_end) for dead_end in all_death)
+
+
+
 
 
 def bottlneck_four_regions_k_p9_a_1(current_state, env,k = 0.9,a = 1):
@@ -36,14 +43,14 @@ def bottlneck_four_regions_k_p9_a_1(current_state, env,k = 0.9,a = 1):
     # Top right region
     elif current_state[0]>4 and current_state[1]<5:
         dist_to_recovery = smallest_distance_to_recovery(current_state,env)
-        dist_to_deadend = smallest_distance_to_deadend(current_state, env)
+        dist_to_ded_death = smallest_distance_to_dead_end_or_death(current_state, env)
         # diff_distance = dist_to_recovery - dist_to_deadend
-        return k*math.exp(-a*dist_to_recovery) - k*math.exp(-a*dist_to_deadend)
+        return k*math.exp(-a*dist_to_recovery) - k*math.exp(-a*dist_to_ded_death)
     
     # Bottom right region
     elif current_state[0]>3 and current_state[1]>4:
-        dist_to_deadend = smallest_distance_to_deadend(current_state, env)
-        return -k*math.exp(-a*dist_to_deadend) - 0.1
+        dist_to_ded_death = smallest_distance_to_dead_end_or_death(current_state, env)
+        return -k*math.exp(-a*dist_to_ded_death) - 0.1
 
 
 # def recovery_dead_end_balance():
