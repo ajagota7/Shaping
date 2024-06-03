@@ -18,4 +18,72 @@ def smallest_distance_to_recovery(current_state, env):
 
     return min(manhattan_distance(current_state, recovery) for recovery in env.possible_recoveries)
 
+
+
+
+def bottlneck_four_regions_k_p9_a_1(current_state, env,k = 0.9,a = 1):
+    # dist_to_bottleneck
+    if current_state[0] <4 and current_state[1]>4:
+        dist_to_bottleneck = manhattan_distance(current_state, [0,5])
+        return k*math.exp(-a*dist_to_bottleneck)
+    
+    elif current_state[0] <5 and current_state[1] <5:
+        dist_to_recovery = smallest_distance_to_recovery(current_state,env)
+        return k*math.exp(-a*dist_to_recovery) + 0.1
+    
+    elif current_state[0]>4 and current_state[1]<5:
+        dist_to_recovery = smallest_distance_to_recovery(current_state,env)
+        dist_to_deadend = smallest_distance_to_deadend(current_state, env)
+        # diff_distance = dist_to_recovery - dist_to_deadend
+        return k*math.exp(-a*dist_to_recovery) - k*math.exp(-a*dist_to_deadend)
+    
+    elif current_state[0]>4 and current_state[1]>4:
+        dist_to_deadend = smallest_distance_to_deadend(current_state, env)
+        return -k*math.exp(-a*dist_to_deadend) - 0.1
+
+
 # def recovery_dead_end_balance():
+
+
+
+# def bottleneck_three_regions(current_state, env, k, a, b=0, A=0, c=0, mode='basic'):
+#     """
+#     Calculates the value based on distance to a bottleneck in three regions using various exponential decay functions.
+
+#     Parameters:
+#     current_state (tuple): The current state (x, y) coordinates.
+#     env (list): The environment (not used in this implementation).
+#     k (float): The scaling constant.
+#     a (float): The decay constant.
+#     b (float): The shift constant (used in shifted mode).
+#     A (float): The asymptote value (used in asymptote mode).
+#     c (float): The initial offset value (used in offset mode).
+#     mode (str): The mode of exponential decay function to use. 
+#                 Options are 'basic', 'shifted', 'asymptote', 'offset', 'double'.
+
+#     Returns:
+#     float: The calculated value based on the distance.
+#     """
+#     if current_state[0] < 4:
+#         dist_to_bottleneck = manhattan_distance(current_state, [0, 5])
+        
+#         if mode == 'basic':
+#             return k * math.exp(-a * dist_to_bottleneck)
+        
+#         elif mode == 'shifted':
+#             return k * math.exp(-a * (dist_to_bottleneck + b))
+        
+#         elif mode == 'asymptote':
+#             return A + k * math.exp(-a * dist_to_bottleneck)
+        
+#         elif mode == 'offset':
+#             return k * math.exp(-a * dist_to_bottleneck) + c
+        
+#         elif mode == 'double':
+#             k1, a1, k2, a2 = k  # assuming k is a tuple (k1, a1, k2, a2) for double exponential decay
+#             return k1 * math.exp(-a1 * dist_to_bottleneck) + k2 * math.exp(-a2 * dist_to_bottleneck)
+        
+#         else:
+#             raise ValueError("Invalid mode. Choose from 'basic', 'shifted', 'asymptote', 'offset', 'double'.")
+
+#     return 0
