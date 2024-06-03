@@ -22,22 +22,26 @@ def smallest_distance_to_recovery(current_state, env):
 
 
 def bottlneck_four_regions_k_p9_a_1(current_state, env,k = 0.9,a = 1):
-    # dist_to_bottleneck
+    
+    # Bottom left region
     if current_state[0] <4 and current_state[1]>4:
         dist_to_bottleneck = manhattan_distance(current_state, [0,5])
         return k*math.exp(-a*dist_to_bottleneck)
     
+    # Top left region
     elif current_state[0] <5 and current_state[1] <5:
         dist_to_recovery = smallest_distance_to_recovery(current_state,env)
         return k*math.exp(-a*dist_to_recovery) + 0.1
     
+    # Top right region
     elif current_state[0]>4 and current_state[1]<5:
         dist_to_recovery = smallest_distance_to_recovery(current_state,env)
         dist_to_deadend = smallest_distance_to_deadend(current_state, env)
         # diff_distance = dist_to_recovery - dist_to_deadend
         return k*math.exp(-a*dist_to_recovery) - k*math.exp(-a*dist_to_deadend)
     
-    elif current_state[0]>4 and current_state[1]>4:
+    # Bottom right region
+    elif current_state[0]>3 and current_state[1]>4:
         dist_to_deadend = smallest_distance_to_deadend(current_state, env)
         return -k*math.exp(-a*dist_to_deadend) - 0.1
 
