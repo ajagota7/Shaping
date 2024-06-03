@@ -28,7 +28,7 @@ def smallest_distance_to_dead_end_or_death(current_state,env):
 
 
 
-def bottlneck_four_regions_k_p9_a_1(current_state, env,k = 0.9,a = 1):
+def bottleneck_four_regions_k_p9_a_1(current_state, env,k = 0.9,a = 1):
     
     # Bottom left region
     if current_state[0] <4 and current_state[1]>4:
