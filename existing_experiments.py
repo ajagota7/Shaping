@@ -266,7 +266,7 @@ class existing_experiments(object):
           values[y, x] = value
 
       # Flip the values horizontally
-      values = np.flip(values, axis=1)
+      values = np.flipud(values)
 
       # Create the heatmap using Matplotlib
       plt.figure(figsize=(8, 6))
