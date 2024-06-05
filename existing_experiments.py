@@ -265,6 +265,9 @@ class existing_experiments(object):
       for (x, y), value in data.items():
           values[y, x] = value
 
+      # Flip the values horizontally
+      values = np.flip(values, axis=1)
+
       # Create the heatmap using Matplotlib
       plt.figure(figsize=(8, 6))
       plt.imshow(values, cmap='viridis', origin='lower')
@@ -274,8 +277,8 @@ class existing_experiments(object):
       plt.xlabel('X')
       plt.ylabel('Y')
       plt.title('Heatmap')
-      plt.xticks(np.arange(10))
-      plt.yticks(np.arange(10))
+      plt.xticks(np.arange(10), labels=np.arange(10))
+      plt.yticks(np.arange(10), labels=np.arange(9, -1, -1))
       if save:
           filename = self.experiment_instance.generate_file_name()
           # filename = self.generate_file_name()
