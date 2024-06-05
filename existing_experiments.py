@@ -276,7 +276,7 @@ class existing_experiments(object):
       # Add labels and title
       plt.xlabel('X')
       plt.ylabel('Y')
-      plt.title('Heatmap')
+      plt.title('Heatmap of state prediction of shaping values')
       plt.xticks(np.arange(10), labels=np.arange(10))
       plt.yticks(np.arange(10), labels=np.arange(9, -1, -1))
       if save:
