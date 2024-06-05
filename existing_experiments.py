@@ -285,6 +285,12 @@ class existing_experiments(object):
 
       plt.show()
 
+    def save_heatmap(self, epoch = None, save = True):
+      data = self.get_model_output_dict(epoch)
+      self.plot_heatmap_save(data, save)
+
+
+
 
 
     # ---------------------
