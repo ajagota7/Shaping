@@ -259,6 +259,32 @@ class existing_experiments(object):
       data = self.get_model_output_dict(epoch)
       self.plot_heatmap(data)
 
+    
+    def plot_heatmap_save(self, data, save = True):
+      values = np.zeros((10, 10))
+      for (x, y), value in data.items():
+          values[y, x] = value
+
+      # Create the heatmap using Matplotlib
+      plt.figure(figsize=(8, 6))
+      plt.imshow(values, cmap='viridis', origin='lower')
+      plt.colorbar(label='Values')
+
+      # Add labels and title
+      plt.xlabel('X')
+      plt.ylabel('Y')
+      plt.title('Heatmap')
+      plt.xticks(np.arange(10))
+      plt.yticks(np.arange(10))
+      if save:
+          filename = self.experiment_instance.generate_file_name()
+          # filename = self.generate_file_name()
+          # generate file path with folder and filename
+          file_path = os.path.join(self.folder_path, f"shaping_heatmap_predictions_{filename}.png")
+          plt.savefig(file_path)
+
+      plt.show()
+
 
 
     # ---------------------
