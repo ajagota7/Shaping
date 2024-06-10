@@ -224,7 +224,7 @@ class existing_experiments(object):
       for i in range(10):
         for j in range(10):
             # Prepare input data
-            input_data = torch.tensor([i, j], dtype=torch.float64)
+            input_data = torch.tensor([i, j], dtype=self.experiment_instance.dtype)
 
             # Pass input through the self.model
             output = model(input_data)
