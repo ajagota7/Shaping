@@ -138,13 +138,23 @@ class SCOPE_experiment():
         - policies: List of policies (pi_b or pi_e)
         """
         # Define the dtype for the structured array
+        
+        # dtype = [
+        #     ('state', np.float64, (2,)),
+        #     ('action', np.int64),
+        #     ('reward', np.float64),
+        #     ('state_next', np.float64, (2,)),
+        #     ('timestep', np.int64),
+        #     ('psi', np.float64)
+
+        # ]
         dtype = [
-            ('state', np.float64, (2,)),
-            ('action', np.int64),
-            ('reward', np.float64),
-            ('state_next', np.float64, (2,)),
-            ('timestep', np.int64),
-            ('psi', np.float64)
+            ('state', np.float32, (2,)),
+            ('action', np.int32),
+            ('reward', np.float32),
+            ('state_next', np.float32, (2,)),
+            ('timestep', np.int32),
+            ('psi', np.float32)
 
         ]
 
@@ -185,7 +195,7 @@ class SCOPE_experiment():
     '''
 
     def initalize_model(self):
-      model = NN_l1_l2_reg(input_dim=2, hidden_dims=self.hidden_dims, dropout_prob=self.dropout_prob, output_dim=1, dtype = torch.float64, l1_lambda=self.l1_reg, l2_lambda = self.l2_reg)
+      model = NN_l1_l2_reg(input_dim=2, hidden_dims=self.hidden_dims, dropout_prob=self.dropout_prob, output_dim=1, dtype = self.dtype, l1_lambda=self.l1_reg, l2_lambda = self.l2_reg)
 
     def prepare_experiment(self):
       env = self.initialize_env()
