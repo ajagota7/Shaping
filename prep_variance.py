@@ -1,7 +1,7 @@
 import numpy as np 
 from IS import calculate_importance_weights
 import torch
-print("hello world")
+
 def variance_terms_tens(eval_policy, behav_policy, behavior_policies):
   # Initialize lists to store axis data for each policy
   t = []
@@ -106,6 +106,9 @@ def variance_terms_tens(eval_policy, behav_policy, behavior_policies):
   # return IS_all, samples_s, samples_w_diff, F_all
 
 
+
+
+
 def calc_variance_t(IS, state_tensors, w_diff, f, sample_last_tensors, feature_net, behavior_policies):
 
   output_arrays = np.empty((len(state_tensors),), dtype=object)
@@ -116,7 +119,7 @@ def calc_variance_t(IS, state_tensors, w_diff, f, sample_last_tensors, feature_n
       output = feature_net(tensor)  # Process each tensor separately
 
       # Store the output tensor directly into output_arrays
-      output_arrays[i] = output
+      output_arrays[i] = output 
 
   phi_w_diff_arrays = output_arrays*w_diff
   # Assuming phi_w_diff_arrays is a list of PyTorch tensors

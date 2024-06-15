@@ -175,6 +175,17 @@ class SCOPE_experiment():
                 psi = self.shaping_feature(state_last, env)
 
                 data_point = np.array([(state_last, action, r, s, timestep, psi)], dtype=dtype)
+                ''' 
+                Should separate reward from trajectories, trajectories should just be 
+                (s,a,r,s')
+                could potentially get ride of timestep parameter if I just use arange as in voloshin
+                IS formulation 
+                Need to formulate such that there is modularity in choosing different estimators
+                (IS, PDIS, WIS, MIS, DR, DM etc. )
+                Have to consider SCOPE_straight class, as well as how to handle various trajectory lengths
+                Presumably will perform padding for efficient training 
+                Consider dataframe with padding as length of max(len(trajectory)) increases
+                '''
                 trajectory = np.append(trajectory, data_point)
                 timestep += 1
 

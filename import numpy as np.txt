@@ -1,0 +1,191 @@
+import numpy as np 
+from IS import calculate_importance_weights
+
+import torch 
+
+class SCOPE_straight(object):
+  
+  def __init__(self, model, gamma, num_bootstraps, pi_b, P_pi_b, P_pi_e, dtype):
+        self.model = model
+        self.gamma = gamma
+        self.num_bootstraps = num_bootstraps
+        self.pi_b = pi_b
+        self.P_pi_b = P_pi_b
+        self.P_pi_e = P_pi_e
+        self.dtype = dtype
+
+
+  def prep_policies(self, P_pi_e, P_pi_b, pi_b):
+      # Initialize lists to store axis data for each policy
+      timesteps = []
+      # states = []
+      # state_first = []
+      # state_last = []
+      actions = []
+      rewards = []
+      # gamma_last = []
+      # weight_last = []
+      # weight_first = []
+      # all_weights_temp, weights = calculate_importance_weights(P_pi_e, P_pi_b, pi_b)
+      weights = calculate_importance_weights(P_pi_e, P_pi_b, pi_b)
+      psi = []
+
+      states_current = []
+      states_next = []
+
+      for index, policy in enumerate(pi_b):
+          policy_array = np.array(policy)
+          timesteps.append(policy_array['timestep'].astype(int))
+          # s.append(policy_array[:, 0])
+
+          # last timestep for gamma
+          # gamma_last.append(len(policy))
+          # last importance weight
+          # weight_last.append(weights[index][-1])
+          # weight_first.append(weights[index][0])
+
+
+          # states.append(policy_array['state'][1:])
+          # psi.append(policy_array['psi'][1:])
+          # state_first.append(policy_array['state'][0])
+          # state_last.append(policy_array['state'][-1])
+          actions.append(policy_array['action'])
+          rewards.append(policy_array['reward'].astype(float))
+
+          states_next.append(policy_array['state_next'])
+          states_current.append(policy_array['state'])
+
+      # weights_difference = []
+      # for index, weight in enumerate(weights):
+      #     # diff = np.array(w[index][:-1]) - np.array(w[index][1:])
+      #     diff = np.array(weight[:-1]) - np.array(weight[1:])
+      #     weights_difference.append(diff)
+
+      # return timesteps, states, state_first, state_last, actions, rewards, gamma_last, weight_last, weights, weights_difference, weight_first
+      return timesteps, rewards, states_next, states_current, weights, actions
+
+  def padding_IS_terms(self, timesteps, actions, rewards, weights):
+  
+    # Find the maximum length among all lists
+    max_length = max(len(traj) for traj in timesteps)
+
+    # Define the padding values
+    zero_padding = 0
+
+    # Pad each list to match the maximum length
+    padded_timesteps = [np.concatenate([traj, [zero_padding] * (max_length - len(traj))]) for traj in timesteps]
+    padded_rewards = [np.concatenate([traj, [zero_padding] * (max_length - len(traj))]) for traj in rewards]
+    padded_actions = [np.concatenate([traj, [zero_padding] * (max_length - len(traj))]) for traj in actions]
+    padded_weights = [np.concatenate([traj, [zero_padding] * (max_length - len(traj))]) for traj in weights]
+
+    return padded_timesteps, padded_rewards, padded_actions, padded_weights
+
+
+  def tensorize_IS_terms(self, padded_timesteps, padded_rewards, padded_weights):
+
+    padded_timestep_tensors = torch.tensor(padded_timesteps, dtype = torch.float64)
+    padded_reward_tensors = torch.tensor(padded_rewards, dtype = torch.float64)
+    padded_weight_tensors = torch.tensor(padded_weights, dtype = torch.float64)
+
+    return padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors
+
+  def padding_states(self, states_next, states_current):
+    # Find the maximum length of trajectories
+    max_length = max(len(trajectory) for trajectory in states_current)
+
+    zero_padding = 0
+
+    # Pad each trajectory to make them all the same length
+    padded_states_next = [
+        [list(item) for item in trajectory] + [[0, 0]] * (max_length - len(trajectory))
+        for trajectory in states_next
+    ]
+
+    # Pad each trajectory to make them all the same length
+    padded_states_current = [
+        [list(item) for item in trajectory] + [[0, 0]] * (max_length - len(trajectory))
+        for trajectory in states_current
+    ]
+
+    return padded_states_next, padded_states_current
+
+
+  def tensorize_padded_terms(self, padded_states_next, padded_states_current):
+    padded_states_next_tensors = torch.tensor(padded_states_next, dtype = torch.float64)
+    padded_states_current_tensors = torch.tensor(padded_states_current, dtype = torch.float64)
+
+    return padded_states_next_tensors, padded_states_current_tensors
+
+
+  def prepare(self):
+    timesteps, rewards, states_next, states_current, weights, actions = self.prep_policies(P_pi_e, P_pi_b, pi_b)
+    padded_timesteps, padded_rewards, padded_actions, padded_weights = self.padding_IS_terms(timesteps, actions, rewards, weights)
+    padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors = self.tensorize_IS_terms(padded_timesteps, padded_rewards, padded_weights)
+    padded_states_next, padded_states_current = self.padding_states(states_next, states_current)
+    padded_states_next_tensors, padded_states_current_tensors = self.tensorize_padded_terms(padded_states_next, padded_states_current)
+
+    return padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, padded_states_next_tensors, padded_states_current_tensors
+
+
+  def pass_states(self, model, padded_states_next_tensors, padded_states_current_tensors):
+    states_next_output = self.model(padded_states_next_tensors)
+    states_current_output = self.model(padded_states_current_tensors)
+
+    return states_next_output.squeeze(), states_current_output.squeeze()
+
+  def bootstrap_straight(self, padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output):
+    seed = 42
+    torch.manual_seed(seed)
+    
+    num_samples = 1000
+    num_bootstraps_lin = num_samples*padded_timestep_tensors.shape[0]
+
+    # states_next_output_res = states_next_output.squeeze()
+    # states_current_output_res = states_current_output.squeeze()
+
+    # Sample indices with replacement
+    sampled_indices = torch.randint(0, len(padded_timestep_tensors), size=(num_bootstraps_lin,), dtype=torch.long)
+
+    reshaped_size = (num_samples, padded_timestep_tensors.shape[0], padded_timestep_tensors.shape[1])
+
+    timestep_bootstraps = padded_timestep_tensors[sampled_indices].view(reshaped_size)
+    rewards_bootstraps = padded_reward_tensors[sampled_indices].view(reshaped_size)
+    weights_bootstraps = padded_weight_tensors[sampled_indices].view(reshaped_size)
+
+    phi_states_next_bootstraps = states_next_output[sampled_indices].view(reshaped_size)
+    phi_states_current_bootstraps = states_current_output[sampled_indices].view(reshaped_size)
+
+    return timestep_bootstraps, rewards_bootstraps, weights_bootstraps, phi_states_next_bootstraps, phi_states_current_bootstraps    
+
+  def pass_then_boostraps(self, model, padded_states_next_tensors, padded_states_current_tensors, padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors):
+    states_next_output, states_current_output = self.pass_states(model, padded_states_next_tensors, padded_states_current_tensors)
+    timestep_bootstraps, rewards_bootstraps, weights_bootstraps, phi_states_next_bootstraps, phi_states_current_bootstraps = self.bootstrap_straight(padded_timestep_tensors, padded_reward_tensors, padded_weight_tensors, states_next_output, states_current_output)
+
+    return timestep_bootstraps, rewards_bootstraps, weights_bootstraps, phi_states_next_bootstraps, phi_states_current_bootstraps
+
+  def calc_variance_straight(self, timestep_bootstraps, weights_bootstraps, rewards_bootstraps, phi_states_next_bootstraps, phi_states_current_bootstraps):
+    
+    IS_boostraps = self.gamma**(timestep_bootstraps)* weights_bootstraps *(rewards_bootstraps)
+    scope_bootstraps = self.gamma**(timestep_bootstraps)* weights_bootstraps *(rewards_bootstraps  +self.gamma*phi_states_next_bootstraps - phi_states_current_bootstraps)
+
+    # Step 1: Sum along the third dimension
+    sum_IS_trajectories = torch.sum(IS_boostraps, dim=2)  # Shape: [1000, 1000]
+
+    # Step 2: Take the mean along the second dimension
+    mean_IS_sum = torch.mean(sum_IS_trajectories, dim=1)  # Shape: [1000]
+
+    # Step 3: Calculate the variance across the first dimension
+    IS_variance = torch.var(mean_IS_sum)  # A single scalar value
+
+
+    # Step 1: Sum along the third dimension
+    sum_scope_trajectories = torch.sum(scope_bootstraps, dim=2)  # Shape: [1000, 1000]
+
+    # Step 2: Take the mean along the second dimension
+    mean_scope_sum = torch.mean(sum_scope_trajectories, dim=1)  # Shape: [1000]
+
+    # Step 3: Calculate the variance across the first dimension
+    scope_variance = torch.var(mean_scope_sum)  # A single scalar value
+
+    return IS_variance, scope_variance
+
