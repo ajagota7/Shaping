@@ -116,6 +116,9 @@ class SCOPE_experiment():
 
 
     def choose_action(self, state, action_probs):
+
+        seed = 42
+        np.random.seed(seed)
         # Get the probability distribution for the given state
         state_probs = action_probs[state]
 
