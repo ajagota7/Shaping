@@ -158,6 +158,9 @@ class SCOPE_experiment():
 
         ]
 
+        seed = 42
+        torch.manual_seed(seed)
+
         policies = []
         for i in range(nb_trajectories):
             trajectory = np.empty(0, dtype=dtype)
