@@ -4,6 +4,7 @@ import torch
 import os 
 from neural_net import NN_l1_l2_reg
 from SCOPE_straight import SCOPE_straight
+import random
 
 from lifegate import LifeGate
 
@@ -38,7 +39,8 @@ class SCOPE_experiment():
                 #  Other general parameters
                  dtype: str,
                  experiment_type: str,
-                 folder_path: str):
+                 folder_path: str,
+                 seed = 42):
                 # folder_name):
 
         self.pi_b_top_k = pi_b_top_k
@@ -68,7 +70,13 @@ class SCOPE_experiment():
         self.dtype = dtype
         self.experiment_type = experiment_type
         self.folder_path = folder_path
+        self.seed = seed
         # self.folder_name = folder_name
+
+        # Set the random seed for reproducibility
+        np.random.seed(self.seed)
+        torch.manual_seed(self.seed)
+        random.seed(self.seed)
 
     '''
     Infrastructure for generating policies
@@ -110,20 +118,23 @@ class SCOPE_experiment():
     def initialize_env(self):
       # Initalize lifegate class
       env = LifeGate(max_steps=self.max_length, state_mode='tabular',
-                        rendering=True, image_saving=False, render_dir=None, rng=np.random.RandomState(1234), death_drag = self.death_drag)
+                        rendering=True, image_saving=False, render_dir=None, rng=np.random.RandomState(self.seed), death_drag = self.death_drag)
 
       return env
 
 
     def choose_action(self, state, action_probs):
 
-        seed = 42
-        np.random.seed(seed)
+        # seed = 42
+        # np.random.seed(seed)
         # Get the probability distribution for the given state
         state_probs = action_probs[state]
 
         # Choose an action based on the probabilities
-        action = np.random.choice(len(state_probs), p=state_probs)
+        # action = np.random.choice(len(state_probs), p=state_probs)
+        
+        # Choose an action based on the probabilities using the random module
+        action = random.choices(range(len(state_probs)), weights=state_probs)[0]
 
         return action
 
@@ -161,8 +172,8 @@ class SCOPE_experiment():
 
         ]
 
-        seed = 42
-        torch.manual_seed(seed)
+        # seed = 42
+        # torch.manual_seed(seed)
 
         policies = []
         for i in range(nb_trajectories):
