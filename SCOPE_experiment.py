@@ -242,8 +242,14 @@ class SCOPE_experiment():
     def generate_file_name(self):
       shaping_function = self.shaping_feature.__name__
       hidden_dims_str = '_'.join(map(str, self.hidden_dims))  # Convert hidden_dims to a string
-      return f"{self.num_trajectories}_{self.gamma}_{self.percent_to_estimate_phi}_{shaping_function}_{self.shaping_coefficient}_{hidden_dims_str}_{self.dropout_prob}_{self.learning_rate}_{self.l1_reg}_{self.l2_reg}_{self.scope_weight}_{self.mse_weight}_{self.max_length}"
-
+      
+      if self.folder_path == "/content/drive/MyDrive/Lifegate_experiments":
+              
+          return f"{self.num_trajectories}_{self.gamma}_{self.percent_to_estimate_phi}_{shaping_function}_{self.shaping_coefficient}_{hidden_dims_str}_{self.dropout_prob}_{self.learning_rate}_{self.l1_reg}_{self.l2_reg}_{self.scope_weight}_{self.mse_weight}_{self.max_length}"
+      
+      # v2 including num top actions and epsilon of pi_b and pi_e in filename 
+      return f"{self.num_trajectories}_{self.pi_b_top_k}_{self.pi_b_epsilon}_{self.pi_e_top_k}_{self.pi_e_epsilon}_{self.gamma}_{self.percent_to_estimate_phi}_{shaping_function}_{self.shaping_coefficient}_{hidden_dims_str}_{self.dropout_prob}_{self.learning_rate}_{self.l1_reg}_{self.l2_reg}_{self.scope_weight}_{self.mse_weight}_{self.max_length}"
+    
     def run_experiment(self):
       filename = self.generate_file_name()
 
